@@ -87,17 +87,7 @@ sub read_val {
             }
         }
         when ( SHIFTED_ORDERED_MAP || SHIFTED_NAMED_LST ) {
-            my $size = read_size();
-            my %hash;
-
-            for ( 1..$size ) {
-                my $k = read_val();
-                my $v = read_val();
-
-                $hash{$k} = $v;
-            }
-
-            return \%hash;
+            return { map read_val(), 1 .. read_size() * 2 };
         }
         when ( SHIFTED_SINT ) {
             return read_small_int();

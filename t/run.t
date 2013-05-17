@@ -1,17 +1,25 @@
 use JavaBin;
+use Test::Deep;
 use Test::More;
 
-my $javabin = `wget -qO- 'http://localhost:8983/solr/collection1/select?q=*:*&wt=javabin'`;
+my $javabin = from_javabin `wget -qO- 'http://localhost:8983/solr/collection1/select?q=*:*&wt=javabin'`;
 
-is_deeply from_javabin($javabin), {
+cmp_deeply $javabin, {
     response => {
         start    => 0,
-        numFound => 0,
-        docs     => [],
+        numFound => 1,
+        docs     => [
+            {
+                birthday  => '1989-06-07T00:00:00Z',
+                id        => 1,
+                snowman   => "\N{SNOWMAN}",
+                _version_ => re('^\d+$'),
+            }
+        ],
         maxScore => undef,
     },
     responseHeader => {
-        QTime  => 0,
+        QTime  => re('^\d+$'),
         status => 0,
         params => {
             q  => '*:*',
@@ -19,7 +27,5 @@ is_deeply from_javabin($javabin), {
         },
     },
 };
-
-is 1,1;
 
 done_testing;

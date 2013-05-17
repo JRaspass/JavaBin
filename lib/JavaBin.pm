@@ -71,7 +71,11 @@ sub read_val {
 
     given ( $tag >> 5 ) {
         when ( SHIFTED_STR ) {
-            return pack 'C*', getbytes( read_size() );
+            my $bytes = pack 'C*', getbytes( read_size() );
+
+            utf8::decode $bytes;
+
+            return $bytes;
         }
         when ( SHIFTED_ARR ) {
             return [ map read_val(), 1..read_size() ];

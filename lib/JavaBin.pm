@@ -1,6 +1,8 @@
 package JavaBin;
 
-use v5.18;
+use v5.10;
+
+use strict;
 use warnings;
 
 use constant NULL       => 0;

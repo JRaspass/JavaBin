@@ -1,4 +1,4 @@
-install:
+install: ""
 language: perl
 perl:
     - "5.17"
@@ -6,4 +6,4 @@ perl:
     - "5.14"
     - "5.12"
     - "5.10"
-script: "prove -l"
+script: prove -l

@@ -22,23 +22,13 @@ use constant BYTEARR    => 13;
 use constant ITERATOR   => 14;
 use constant TERM       => 15;
 
-#use constant TAG_AND_LEN  => (1 << 5);
-use constant STR           => (1 << 5);
-use constant SINT          => (2 << 5);
-use constant SLONG         => (3 << 5);
-use constant ARR           => (4 << 5);
-use constant ORDERED_MAP   => (5 << 5);
-use constant NAMED_LST     => (6 << 5);
-use constant EXTERN_STRING => (7 << 5);
-
-# TODO 論理シフト
-use constant SHIFTED_STR           => STR >> 5;
-use constant SHIFTED_ARR           => ARR >> 5;
-use constant SHIFTED_EXTERN_STRING => EXTERN_STRING >> 5;
-use constant SHIFTED_ORDERED_MAP   => ORDERED_MAP >> 5;
-use constant SHIFTED_NAMED_LST     => NAMED_LST >> 5;
-use constant SHIFTED_SINT          => SINT >> 5;
-use constant SHIFTED_SLONG         => SLONG >> 5;
+use constant SHIFTED_STR           => 1;
+use constant SHIFTED_SINT          => 2;
+use constant SHIFTED_SLONG         => 3;
+use constant SHIFTED_ARR           => 4;
+use constant SHIFTED_ORDERED_MAP   => 5;
+use constant SHIFTED_NAMED_LST     => 6;
+use constant SHIFTED_EXTERN_STRING => 7;
 
 use constant TERM_OBJ => 'TERMINATE';
 
@@ -57,11 +47,11 @@ sub from_javabin {
     return read_val();
 }
 
-sub getbyte {
+sub get_byte {
     return $input[ $pos++ ];
 }
 
-sub getbytes {
+sub get_bytes {
     #return @input[ $pos .. ( ( $pos += shift ) -1 ) ];
     my @ret = @input[ $pos .. ( $pos + $_[0] - 1 )];
     $pos += $_[0];
@@ -69,11 +59,11 @@ sub getbytes {
 }
 
 sub read_val {
-    $tag = getbyte();
+    $tag = get_byte();
 
     given ( $tag >> 5 ) {
         when ( SHIFTED_STR ) {
-            my $bytes = pack 'C*', getbytes( read_size() );
+            my $bytes = pack 'C*', get_bytes( read_size() );
 
             utf8::decode $bytes;
 
@@ -114,49 +104,35 @@ sub read_val {
             return 0;
         }
         when ( BYTE ) {
-            return unpack 'c', pack 'C*', getbytes(1);
+            return unpack 'c', pack 'C*', get_byte();
         }
         when ( SHORT ) {
-            return unpack 's', pack 'C*', getbytes(2);
+            return unpack 's', pack 'C*', reverse get_bytes(2);
         }
         when ( DOUBLE ) {
-            return unpack 'G', pack 'C*', getbytes(8);
+            return unpack 'd>', pack 'C*', get_bytes(8);
         }
         when ( INT ) {
-            return unpack 'i', pack 'C*', getbytes(4);
+            return unpack 'i', pack 'C*', reverse get_bytes(4);
         }
         when ( LONG ) {
-            return unpack 'q', pack 'C*', getbytes(8);
+            return unpack 'q', pack 'C*', reverse get_bytes(8);
         }
         when ( FLOAT ) {
-            return unpack 'g', pack 'C*', getbytes(4);
+            return unpack 'f>', pack 'C*', get_bytes(4);
         }
         when ( DATE ) {
             ( $s, $m, $h, $d, $M, $y ) = gmtime(
-                unpack( 'q', pack 'C*', reverse getbytes(8) ) / 1000
+                unpack( 'q', pack 'C*', reverse get_bytes(8) ) / 1000
             );
 
-            return sprintf
-                '%04d-%02d-%02dT%02d:%02d:%02dZ',
-                $y + 1900, $M + 1, $d, $h, $m, $s;
+            return sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
         }
         when ( MAP ) {
-            my $size = read_v_int();
-            my %hash;
-
-            for ( 1..$size )
-            {
-                my $k = read_val();
-                my $v = read_val();
-
-                $hash{$k} = $v;
-            }
-
-            return \%hash;
+            return { map read_val(), 1 .. read_v_int() * 2 };
         }
         when ( BYTEARR ) {
-            my $size = read_v_int();
-            return [ getbytes($size) ];
+            return [ unpack 'c*', pack 'C*', get_bytes(read_v_int()) ];
         }
         when ( ITERATOR ) {
             my @array;
@@ -185,11 +161,11 @@ sub read_val {
 }
 
 sub read_v_int {
-    my $byte = getbyte();
+    my $byte = get_byte();
     my $result = $byte & 0x7f;
     my $shift = 7;
     while ( ($byte & 0x80) != 0 ) {
-        $byte = getbyte();
+        $byte = get_byte();
         $result |= (($byte & 0x7f) << $shift);
         $shift += 7;
     }

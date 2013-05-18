@@ -116,12 +116,7 @@ sub from_javabin {
 }
 
 sub get_bytes {
-    #return @input[ $pos .. ( ( $pos += shift ) -1 ) ];
-    my @ret = @input[ $pos .. ( $pos + $_[0] - 1 )];
-
-    $pos += $_[0];
-
-    @ret;
+    @input[ ( $pos += $_[0] ) - $_[0] .. $pos - 1 ];
 }
 
 sub read_val {

@@ -47,7 +47,7 @@ my ( $s, $m, $h, $d, $M, $y, @exts, @input, $pos, $tag );
 sub import {
     no strict 'refs';
 
-    *{ caller . '::from_javabin' } = \&from_javabin;
+    *{ caller() . '::from_javabin' } = \&from_javabin;
 }
 
 sub from_javabin {

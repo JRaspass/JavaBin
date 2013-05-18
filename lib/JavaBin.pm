@@ -17,7 +17,7 @@ my @dispatch = (
     # bool false
     sub { 0 },
     # byte
-    sub { unpack 'c', pack 'C*', get_byte() },
+    sub { unpack 'c', pack 'C*', $input[$pos++] },
     # short
     sub { unpack 's', pack 'C*', reverse get_bytes(2) },
     # double
@@ -115,10 +115,6 @@ sub from_javabin {
     read_val();
 }
 
-sub get_byte {
-    $input[ $pos++ ];
-}
-
 sub get_bytes {
     #return @input[ $pos .. ( ( $pos += shift ) -1 ) ];
     my @ret = @input[ $pos .. ( $pos + $_[0] - 1 )];
@@ -129,18 +125,18 @@ sub get_bytes {
 }
 
 sub read_val {
-    $tag = get_byte();
+    $tag = $input[$pos++];
 
     ( $shifted_dispatch[$tag >> 5] || $dispatch[$tag] )->();
 }
 
 sub read_v_int {
-    my $byte   = get_byte();
+    my $byte   = $input[$pos++];
     my $result = $byte & 0x7f;
     my $shift  = 7;
 
     while ( ($byte & 0x80) != 0 ) {
-        $byte = get_byte();
+        $byte = $input[$pos++];
 
         $result |= (($byte & 0x7f) << $shift);
 

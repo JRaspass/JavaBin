@@ -125,9 +125,7 @@ sub get_bytes {
 }
 
 sub read_val {
-    $tag = $input[$pos++];
-
-    ( $shifted_dispatch[$tag >> 5] || $dispatch[$tag] )->();
+    ( $shifted_dispatch[( $tag = $input[$pos++] ) >> 5] || $dispatch[$tag] )->();
 }
 
 sub read_v_int {

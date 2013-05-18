@@ -5,7 +5,7 @@ use warnings;
 
 use constant TERM_OBJ => 'TERMINATE';
 
-my ( $s, $m, $h, $d, $M, $y, @exts, @input, $pos, $string, $tag );
+my ( $s, $m, $h, $d, $M, $y, @bytes, @exts, $pos, $string, $tag );
 
 my @dispatch = (
     # null
@@ -15,21 +15,21 @@ my @dispatch = (
     # bool false
     sub { 0 },
     # byte
-    sub { unpack 'c', pack 'C*', $input[$pos++] },
+    sub { unpack 'c', pack 'C*', $bytes[$pos++] },
     # short
-    sub { unpack 's', pack 'C*', reverse @input[ ( $pos += 2 ) - 2 .. $pos - 1 ] },
+    sub { unpack 's', pack 'C*', reverse @bytes[ ( $pos += 2 ) - 2 .. $pos - 1 ] },
     # double
-    sub { unpack 'd>', pack 'C*', @input[ ( $pos += 8 ) - 8 .. $pos - 1 ] },
+    sub { unpack 'd>', pack 'C*', @bytes[ ( $pos += 8 ) - 8 .. $pos - 1 ] },
     # int
-    sub { unpack 'i', pack 'C*', reverse @input[ ( $pos += 4 ) - 4 .. $pos - 1 ] },
+    sub { unpack 'i', pack 'C*', reverse @bytes[ ( $pos += 4 ) - 4 .. $pos - 1 ] },
     # long
-    sub { unpack 'q', pack 'C*', reverse @input[ ( $pos += 8 ) - 8 .. $pos - 1 ] },
+    sub { unpack 'q', pack 'C*', reverse @bytes[ ( $pos += 8 ) - 8 .. $pos - 1 ] },
     # float,
-    sub { unpack 'f>', pack 'C*', @input[ ( $pos += 4 ) - 4 .. $pos - 1 ] },
+    sub { unpack 'f>', pack 'C*', @bytes[ ( $pos += 4 ) - 4 .. $pos - 1 ] },
     # date
     sub {
         ( $s, $m, $h, $d, $M, $y ) =
-            gmtime( unpack( 'q', pack 'C*', reverse @input[ ( $pos += 8 ) - 8 .. $pos - 1 ] ) / 1000 );
+            gmtime( unpack( 'q', pack 'C*', reverse @bytes[ ( $pos += 8 ) - 8 .. $pos - 1 ] ) / 1000 );
 
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },
@@ -49,7 +49,7 @@ my @dispatch = (
     sub {
         my $size = read_v_int();
 
-        [ unpack 'c*', pack 'C*', @input[ ( $pos += $size ) - $size .. $pos - 1 ] ];
+        [ unpack 'c*', pack 'C*', @bytes[ ( $pos += $size ) - $size .. $pos - 1 ] ];
     },
     # iterator
     sub {
@@ -75,7 +75,7 @@ my @shifted_dispatch = (
     sub {
         my $size = read_size();
 
-        utf8::decode( $string = pack 'C*', @input[ ( $pos += $size ) - $size .. $pos - 1 ] );
+        utf8::decode( $string = pack 'C*', @bytes[ ( $pos += $size ) - $size .. $pos - 1 ] );
 
         $string;
     },
@@ -111,7 +111,7 @@ sub import {
 }
 
 sub from_javabin {
-    @input = unpack 'C*', shift;
+    @bytes = unpack 'C*', shift;
 
     $pos = 1;
 
@@ -119,16 +119,16 @@ sub from_javabin {
 }
 
 sub read_val {
-    ( $shifted_dispatch[( $tag = $input[$pos++] ) >> 5] || $dispatch[$tag] )->();
+    ( $shifted_dispatch[( $tag = $bytes[$pos++] ) >> 5] || $dispatch[$tag] )->();
 }
 
 sub read_v_int {
-    my $byte   = $input[$pos++];
+    my $byte   = $bytes[$pos++];
     my $result = $byte & 0x7f;
     my $shift  = 7;
 
     while ( ($byte & 0x80) != 0 ) {
-        $byte = $input[$pos++];
+        $byte = $bytes[$pos++];
 
         $result |= (($byte & 0x7f) << $shift);
 

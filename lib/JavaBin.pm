@@ -28,7 +28,8 @@ my @dispatch = (
     sub { unpack 'f>', pack 'C*', @input[ ( $pos += 4 ) - 4 .. $pos - 1 ] },
     # date
     sub {
-        ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q', pack 'C*', reverse @input[ ( $pos += 8 ) - 8 .. $pos - 1 ] ) / 1000 );
+        ( $s, $m, $h, $d, $M, $y ) =
+            gmtime( unpack( 'q', pack 'C*', reverse @input[ ( $pos += 8 ) - 8 .. $pos - 1 ] ) / 1000 );
 
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },

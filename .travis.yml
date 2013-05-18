@@ -1,4 +1,4 @@
-install: "echo ''"
+install: ""
 language: perl
 perl:
     - "5.16"

@@ -1,3 +1,8 @@
+use strict;
+use warnings;
+
+use charnames ':full';
+
 use JavaBin;
 use Test::More;
 

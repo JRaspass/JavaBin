@@ -5,7 +5,7 @@ use warnings;
 
 use constant TERM_OBJ => 'TERMINATE';
 
-my ( $s, $m, $h, $d, $M, $y, @exts, @input, $pos, $tag );
+my ( $s, $m, $h, $d, $M, $y, @exts, @input, $pos, $string, $tag );
 
 my @dispatch = (
     # null
@@ -72,12 +72,11 @@ my @shifted_dispatch = (
     undef,
     # string
     sub {
-        my $size  = read_size();
-        my $bytes = pack 'C*', @input[ ( $pos += $size ) - $size .. $pos - 1 ];
+        my $size = read_size();
 
-        utf8::decode $bytes;
+        utf8::decode( $string = pack 'C*', @input[ ( $pos += $size ) - $size .. $pos - 1 ] );
 
-        $bytes;
+        $string;
     },
     # small int
     sub { read_small_int() },

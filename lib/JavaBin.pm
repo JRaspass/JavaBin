@@ -17,18 +17,18 @@ my @dispatch = (
     # byte
     sub { unpack 'c', pack 'C*', $input[$pos++] },
     # short
-    sub { unpack 's', pack 'C*', reverse get_bytes(2) },
+    sub { unpack 's', pack 'C*', reverse @input[ ( $pos += 2 ) - 2 .. $pos - 1 ] },
     # double
-    sub { unpack 'd>', pack 'C*', get_bytes(8) },
+    sub { unpack 'd>', pack 'C*', @input[ ( $pos += 8 ) - 8 .. $pos - 1 ] },
     # int
-    sub { unpack 'i', pack 'C*', reverse get_bytes(4) },
+    sub { unpack 'i', pack 'C*', reverse @input[ ( $pos += 4 ) - 4 .. $pos - 1 ] },
     # long
-    sub { unpack 'q', pack 'C*', reverse get_bytes(8) },
+    sub { unpack 'q', pack 'C*', reverse @input[ ( $pos += 8 ) - 8 .. $pos - 1 ] },
     # float,
-    sub { unpack 'f>', pack 'C*', get_bytes(4) },
+    sub { unpack 'f>', pack 'C*', @input[ ( $pos += 4 ) - 4 .. $pos - 1 ] },
     # date
     sub {
-        ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q', pack 'C*', reverse get_bytes(8) ) / 1000 );
+        ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q', pack 'C*', reverse @input[ ( $pos += 8 ) - 8 .. $pos - 1 ] ) / 1000 );
 
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },
@@ -45,7 +45,11 @@ my @dispatch = (
         \%result;
     },
     # byte array
-    sub { [ unpack 'c*', pack 'C*', get_bytes(read_v_int()) ] },
+    sub {
+        my $size = read_v_int();
+
+        [ unpack 'c*', pack 'C*', @input[ ( $pos += $size ) - $size .. $pos - 1 ] ];
+    },
     # iterator
     sub {
         my @array;
@@ -68,7 +72,8 @@ my @shifted_dispatch = (
     undef,
     # string
     sub {
-        my $bytes = pack 'C*', get_bytes( read_size() );
+        my $size  = read_size();
+        my $bytes = pack 'C*', @input[ ( $pos += $size ) - $size .. $pos - 1 ];
 
         utf8::decode $bytes;
 
@@ -111,10 +116,6 @@ sub from_javabin {
     $pos = 1;
 
     read_val();
-}
-
-sub get_bytes {
-    @input[ ( $pos += $_[0] ) - $_[0] .. $pos - 1 ];
 }
 
 sub read_val {

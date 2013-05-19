@@ -104,8 +104,8 @@ sub import {
 
 sub from_javabin {
     @bytes = unpack 'C*', shift;
-
-    $pos = 1;
+    @exts  = ();
+    $pos   = 1;
 
     read_val();
 }

@@ -3,8 +3,6 @@ package JavaBin;
 use strict;
 use warnings;
 
-use constant TERM_OBJ => 'TERMINATE';
-
 my ( $s, $m, $h, $d, $M, $y, @bytes, @exts, $pos, $string, $tag );
 
 my @dispatch = (
@@ -55,18 +53,12 @@ my @dispatch = (
     sub {
         my @array;
 
-        while ( 1 ) {
-            my $i = read_val();
+        push @array, read_val() until $bytes[$pos] == 15;
 
-            last if $i eq TERM_OBJ;
-
-            push @array, $i;
-        }
+        $pos++;
 
         \@array;
     },
-    # term
-    sub { TERM_OBJ },
 );
 
 my @shifted_dispatch = (

@@ -1,4 +1,5 @@
 import java.io.FileOutputStream;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -13,6 +14,7 @@ public class MakeData {
                 put("byte_neg", (byte)-128);
                 put("date", new Date(613_180_800_000L));
                 put("double", 1.797_693_134_862_31e308);
+                put("iterator", Arrays.asList(new String[]{"qux","baz","bar","foo"}).iterator());
                 put("false", false);
                 put("float", 3.402_823_466_385_29e+38f);
                 put("shifted_sint", 2_147_483_647);

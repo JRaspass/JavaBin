@@ -15,6 +15,7 @@ is_deeply from_javabin( do { local $/; <$fh> } ), {
     byte_neg     => -128,
     date         => '1989-06-07T00:00:00Z',
     double       => 1.797_693_134_862_31e308,
+    iterator     => [qw/qux baz bar foo/],
     false        => 0,
     float        => 3.402_823_466_385_29e38,
     shifted_sint => 2_147_483_647,

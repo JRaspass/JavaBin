@@ -3,7 +3,7 @@ package JavaBin;
 use strict;
 use warnings;
 
-my ( @exts, $fh, $tag );
+my ( $bytes, @exts, $pos, $tag );
 
 my @dispatch = (
     # null
@@ -13,46 +13,20 @@ my @dispatch = (
     # bool false
     sub { 0 },
     # byte
-    sub {
-        read $fh, my $byte, 1;
-
-        unpack 'c', $byte;
-    },
+    sub { unpack 'c', substr $bytes, $pos++, 1 },
     # short
-    sub {
-        read $fh, my $bytes, 2;
-
-        unpack 's', reverse $bytes;
-    },
+    sub { unpack 's', reverse substr $bytes, ( $pos += 2 ) - 2, 2 },
     # double
-    sub {
-        read $fh, my $bytes, 8;
-
-        unpack 'd>', $bytes;
-    },
+    sub { unpack 'd>', substr $bytes, ( $pos += 8 ) - 8, 8 },
     # int
-    sub {
-        read $fh, my $bytes, 4;
-
-        unpack 'i', reverse $bytes;
-    },
+    sub { unpack 'i', reverse substr $bytes, ( $pos += 4 ) - 4, 4 },
     # long
-    sub {
-        read $fh, my $bytes, 8;
-
-        unpack 'q', reverse $bytes;
-    },
+    sub { unpack 'q', reverse substr $bytes, ( $pos += 8 ) - 8, 8 },
     # float,
-    sub {
-        read $fh, my $bytes, 4;
-
-        unpack 'f>', $bytes;
-    },
+    sub { unpack 'f>', substr $bytes, ( $pos += 4 ) - 4, 4 },
     # date
     sub {
-        read $fh, my $bytes, 8;
-
-        my ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q', reverse $bytes ) / 1000 );
+        my ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q', reverse substr $bytes, ( $pos += 8 ) - 8, 8 ) / 1000 );
 
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },
@@ -70,16 +44,17 @@ my @dispatch = (
     },
     # byte array
     sub {
-        read $fh, my $bytes, read_v_int();
+        my $size = read_v_int();
 
-        [ unpack 'c*', $bytes ];
+        [ unpack 'c*', substr $bytes, ( $pos += $size ) - $size, $size ];
     },
     # iterator
     sub {
         my ( @array, $byte );
 
-        push @array, read_val()
-            while read $fh, $byte, 1 and 15 != unpack 'C', $byte and seek $fh, -1, 1;
+        push @array, read_val() until 15 == unpack 'C', substr $bytes, $pos, 1;
+
+        $pos++;
 
         \@array;
     },
@@ -89,11 +64,13 @@ my @shifted_dispatch = (
     undef,
     # string
     sub {
-        read $fh, my $bytes, read_size();
+        my $size = read_size();
 
-        utf8::decode $bytes;
+        utf8::decode my $string = substr $bytes, $pos, $size;
 
-        $bytes;
+        $pos += $size;
+
+        $string;
     },
     # small int
     sub { read_small_int() },
@@ -125,10 +102,10 @@ sub import {
 }
 
 sub from_javabin {
-    open $fh, '<', \shift;
+    $bytes = shift;
 
     # skip the version byte
-    seek $fh, 1, 0;
+    $pos = 1;
 
     @exts = ();
 
@@ -136,24 +113,18 @@ sub from_javabin {
 }
 
 sub read_val {
-    read $fh, my $byte, 1;
-
-    ( $shifted_dispatch[ ( $tag = unpack 'C', $byte ) >> 5 ] || $dispatch[$tag] )->();
+    ( $shifted_dispatch[ ( $tag = unpack 'C', substr $bytes, $pos++, 1 ) >> 5 ] || $dispatch[$tag] )->();
 }
 
 sub read_v_int {
-    read $fh, my $byte, 1;
-
-    $byte = unpack 'C', $byte;
+    my $byte = unpack 'C', substr $bytes, $pos++, 1;
 
     my $result = $byte & 0x7f;
 
     my $shift = 7;
 
     while ( ($byte & 0x80) != 0 ) {
-        read $fh, $byte, 1;
-
-        $byte = unpack 'C', $byte;
+        $byte = unpack 'C', substr $bytes, $pos++, 1;
 
         $result |= (($byte & 0x7f) << $shift);
 

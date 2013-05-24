@@ -121,14 +121,12 @@ sub read_v_int {
 
     my $result = $byte & 0x7f;
 
-    my $shift = 7;
+    my $shift;
 
-    while ( ($byte & 0x80) != 0 ) {
+    while ( $byte & 0x80 ) {
         $byte = ord substr $bytes, $pos++, 1;
 
-        $result |= (($byte & 0x7f) << $shift);
-
-        $shift += 7;
+        $result |= ( $byte & 0x7f ) << ( $shift += 7 );
     }
 
     $result;
@@ -143,9 +141,9 @@ sub read_size {
 }
 
 sub read_small_int {
-    my $result = $tag & 0x0F;
+    my $result = $tag & 0x0f;
 
-    $result = ((read_v_int() << 4) | $result) if $tag & 0x10;
+    $result = read_v_int() << 4 | $result if $tag & 0x10;
 
     $result;
 }

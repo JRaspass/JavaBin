@@ -52,7 +52,7 @@ my @dispatch = (
     sub {
         my ( @array, $byte );
 
-        push @array, read_val() until 15 == unpack 'C', substr $bytes, $pos, 1;
+        push @array, read_val() until 15 == ord substr $bytes, $pos, 1;
 
         $pos++;
 
@@ -113,18 +113,18 @@ sub from_javabin {
 }
 
 sub read_val {
-    ( $shifted_dispatch[ ( $tag = unpack 'C', substr $bytes, $pos++, 1 ) >> 5 ] || $dispatch[$tag] )->();
+    ( $shifted_dispatch[ ( $tag = ord substr $bytes, $pos++, 1 ) >> 5 ] || $dispatch[$tag] )->();
 }
 
 sub read_v_int {
-    my $byte = unpack 'C', substr $bytes, $pos++, 1;
+    my $byte = ord substr $bytes, $pos++, 1;
 
     my $result = $byte & 0x7f;
 
     my $shift = 7;
 
     while ( ($byte & 0x80) != 0 ) {
-        $byte = unpack 'C', substr $bytes, $pos++, 1;
+        $byte = ord substr $bytes, $pos++, 1;
 
         $result |= (($byte & 0x7f) << $shift);
 

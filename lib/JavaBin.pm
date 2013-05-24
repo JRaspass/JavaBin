@@ -3,7 +3,7 @@ package JavaBin;
 use strict;
 use warnings;
 
-my ( $bytes, @exts, $pos, $tag );
+my ( $bytes, @exts, $tag );
 
 my @dispatch = (
     # null
@@ -13,20 +13,20 @@ my @dispatch = (
     # bool false
     sub { 0 },
     # byte
-    sub { unpack 'c', substr $bytes, $pos++, 1 },
+    sub { unpack 'c', substr $bytes, 0, 1, '' },
     # short
-    sub { unpack 's', reverse substr $bytes, ( $pos += 2 ) - 2, 2 },
+    sub { unpack 's', reverse substr $bytes, 0, 2, '' },
     # double
-    sub { unpack 'd>', substr $bytes, ( $pos += 8 ) - 8, 8 },
+    sub { unpack 'd>', substr $bytes, 0, 8, '' },
     # int
-    sub { unpack 'i', reverse substr $bytes, ( $pos += 4 ) - 4, 4 },
+    sub { unpack 'i', reverse substr $bytes, 0, 4, '' },
     # long
-    sub { unpack 'q', reverse substr $bytes, ( $pos += 8 ) - 8, 8 },
+    sub { unpack 'q', reverse substr $bytes, 0, 8, '' },
     # float,
-    sub { unpack 'f>', substr $bytes, ( $pos += 4 ) - 4, 4 },
+    sub { unpack 'f>', substr $bytes, 0, 4, '' },
     # date
     sub {
-        my ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q', reverse substr $bytes, ( $pos += 8 ) - 8, 8 ) / 1000 );
+        my ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q', reverse substr $bytes, 0, 8, '' ) / 1000 );
 
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },
@@ -43,18 +43,14 @@ my @dispatch = (
         \%result;
     },
     # byte array
-    sub {
-        my $size = read_v_int();
-
-        [ unpack 'c*', substr $bytes, ( $pos += $size ) - $size, $size ];
-    },
+    sub { [ unpack 'c*', substr $bytes, 0, read_v_int(), '' ] },
     # iterator
     sub {
         my ( @array, $byte );
 
-        push @array, read_val() until 15 == ord substr $bytes, $pos, 1;
+        push @array, read_val() until 15 == ord substr $bytes, 0, 1;
 
-        $pos++;
+        substr $bytes, 0, 1, '';
 
         \@array;
     },
@@ -64,11 +60,7 @@ my @shifted_dispatch = (
     undef,
     # string
     sub {
-        my $size = read_size();
-
-        utf8::decode my $string = substr $bytes, $pos, $size;
-
-        $pos += $size;
+        utf8::decode my $string = substr $bytes, 0, read_size(), '';
 
         $string;
     },
@@ -105,7 +97,7 @@ sub from_javabin {
     $bytes = shift;
 
     # skip the version byte
-    $pos = 1;
+    substr $bytes, 0, 1, '';
 
     @exts = ();
 
@@ -113,18 +105,18 @@ sub from_javabin {
 }
 
 sub read_val {
-    ( $shifted_dispatch[ ( $tag = ord substr $bytes, $pos++, 1 ) >> 5 ] || $dispatch[$tag] )->();
+    ( $shifted_dispatch[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] )->();
 }
 
 sub read_v_int {
-    my $byte = ord substr $bytes, $pos++, 1;
+    my $byte = ord substr $bytes, 0, 1, '';
 
     my $result = $byte & 0x7f;
 
     my $shift;
 
     while ( $byte & 0x80 ) {
-        $byte = ord substr $bytes, $pos++, 1;
+        $byte = ord substr $bytes, 0, 1, '';
 
         $result |= ( $byte & 0x7f ) << ( $shift += 7 );
     }

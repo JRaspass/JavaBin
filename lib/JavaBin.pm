@@ -48,7 +48,7 @@ my @dispatch = (
     sub {
         my ( @array, $byte );
 
-        push @array, read_val() until 15 == ord substr $bytes, 0, 1;
+        push @array, read_val() until 15 == ord $bytes;
 
         substr $bytes, 0, 1, '';
 

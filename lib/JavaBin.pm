@@ -83,9 +83,13 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
             $exts[$size - 1];
         }
         else {
-            push @exts, my $str = &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] };
+            $tag = ord substr $bytes, 0, 1, '';
 
-            $str;
+            utf8::decode my $string = substr $bytes, 0, read_size(), '';
+
+            push @exts, $string;
+
+            $string;
         }
     },
 );

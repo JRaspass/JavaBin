@@ -19,8 +19,10 @@ public class MakeData {
                 put("float", 3.402_823_466_385_29e+38f);
                 put("shifted_sint", 2_147_483_647);
                 put("long", 9_223_372_036_854_775_807L);
+                put("long_neg", -9_223_372_036_854_775_808L);
                 put("null", null);
                 put("short", (short)32_767);
+                put("short_neg", (short)-32_768);
                 put("snowman", "☃");
                 put("true", true);
             }}, new FileOutputStream("data"));

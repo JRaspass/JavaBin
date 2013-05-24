@@ -15,18 +15,18 @@ my @dispatch = (
     # byte
     sub { unpack 'c', substr $bytes, 0, 1, '' },
     # short
-    sub { unpack 's', reverse substr $bytes, 0, 2, '' },
+    sub { unpack 's>', substr $bytes, 0, 2, '' },
     # double
     sub { unpack 'd>', substr $bytes, 0, 8, '' },
     # int
-    sub { unpack 'i', reverse substr $bytes, 0, 4, '' },
+    sub { unpack 'i>', substr $bytes, 0, 4, '' },
     # long
-    sub { unpack 'q', reverse substr $bytes, 0, 8, '' },
+    sub { unpack 'q>', substr $bytes, 0, 8, '' },
     # float,
     sub { unpack 'f>', substr $bytes, 0, 4, '' },
     # date
     sub {
-        my ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q', reverse substr $bytes, 0, 8, '' ) / 1000 );
+        my ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q>', substr $bytes, 0, 8, '' ) / 1000 );
 
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },

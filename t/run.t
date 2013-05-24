@@ -20,8 +20,10 @@ is_deeply from_javabin( do { local $/; <$fh> } ), {
     float        => 3.402_823_466_385_29e38,
     shifted_sint => 2_147_483_647,
     long         => 9_223_372_036_854_775_807,
+    long_neg     => -9_223_372_036_854_775_808,
     null         => undef,
     short        => 32_767,
+    short_neg    => -32_768,
     snowman      => "\N{SNOWMAN}",
     true         => 1,
 };

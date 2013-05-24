@@ -3,9 +3,9 @@ package JavaBin;
 use strict;
 use warnings;
 
-my ( $bytes, @exts, $tag );
+my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
 
-my @dispatch = (
+@dispatch = (
     # null
     sub { undef },
     # bool true
@@ -31,14 +31,17 @@ my @dispatch = (
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },
     # map
-    sub { +{ map read_val(), 1 .. read_v_int() * 2 } },
+    sub { +{ map &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] }, 1 .. read_v_int() * 2 } },
     # solr doc
-    sub { read_val() },
+    sub { &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] } },
     # solr doc list
     sub {
         my %result;
 
-        @result{qw/numFound start maxScore docs/} = ( @{ read_val() }, read_val() );
+        @result{qw/numFound start maxScore docs/} = (
+            @{ &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] } },
+               &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
+        );
 
         \%result;
     },
@@ -48,7 +51,7 @@ my @dispatch = (
     sub {
         my @array;
 
-        push @array, read_val() until 15 == ord $bytes;
+        push @array, &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] } until 15 == ord $bytes;
 
         substr $bytes, 0, 1, '';
 
@@ -56,7 +59,7 @@ my @dispatch = (
     },
 );
 
-my @shifted_dispatch = (
+@dispatch_shift = (
     undef,
     # string
     sub {
@@ -69,18 +72,18 @@ my @shifted_dispatch = (
     # small long
     sub { read_small_int() },
     # array
-    sub { [ map read_val(), 1 .. read_size() ] },
+    sub { [ map &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] }, 1 .. read_size() ] },
     # ordered map
-    sub { +{ map read_val(), 1 .. read_size() * 2 } },
+    sub { +{ map &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] }, 1 .. read_size() * 2 } },
     # named list
-    sub { +{ map read_val(), 1 .. read_size() * 2 } },
+    sub { +{ map &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] }, 1 .. read_size() * 2 } },
     # extern string
     sub {
         if ( my $size = read_size() ) {
             $exts[$size - 1];
         }
         else {
-            push @exts, my $str = read_val();
+            push @exts, my $str = &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] };
 
             $str;
         }
@@ -101,11 +104,7 @@ sub from_javabin {
 
     @exts = ();
 
-    read_val();
-}
-
-sub read_val {
-    ( $shifted_dispatch[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] )->();
+    &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] };
 }
 
 sub read_v_int {

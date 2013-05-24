@@ -46,7 +46,7 @@ my @dispatch = (
     sub { [ unpack 'c*', substr $bytes, 0, read_v_int(), '' ] },
     # iterator
     sub {
-        my ( @array, $byte );
+        my @array;
 
         push @array, read_val() until 15 == ord $bytes;
 

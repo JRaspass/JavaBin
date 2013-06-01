@@ -92,12 +92,6 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
     },
 );
 
-sub import {
-    no strict 'refs';
-
-    *{ caller() . '::from_javabin' } = \&from_javabin;
-}
-
 sub from_javabin {
     # skip the version byte
     $bytes = substr shift, 1;
@@ -105,6 +99,12 @@ sub from_javabin {
     @exts = ();
 
     &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] };
+}
+
+sub import {
+    no strict 'refs';
+
+    *{ caller() . '::from_javabin' } = \&from_javabin;
 }
 
 sub read_size {
@@ -130,7 +130,7 @@ sub _bytes {
     shift;
 }
 
-# Lucene variable-length +ve integer, the MSB indicates wether you need another octet.
+# Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
 # http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
 sub _vint {
     my ( $byte, $shift, $value );

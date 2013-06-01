@@ -99,10 +99,8 @@ sub import {
 }
 
 sub from_javabin {
-    $bytes = shift;
-
     # skip the version byte
-    substr $bytes, 0, 1, '';
+    $bytes = substr shift, 1;
 
     @exts = ();
 

@@ -51,9 +51,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
     sub {
         my @array;
 
-        push @array, &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] } until 15 == ord $bytes;
-
-        substr $bytes, 0, 1, '';
+        push @array, &{ $dispatch_shift[ $tag >> 5 ] || $dispatch[$tag] } until ( $tag = ord substr $bytes, 0, 1, '' ) == 15;
 
         \@array;
     },

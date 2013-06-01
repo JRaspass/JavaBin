@@ -31,6 +31,7 @@ is_deeply from_javabin( do { local $/; <$fh> } ), {
     long         => 9_223_372_036_854_775_807,
     long_neg     => -9_223_372_036_854_775_808,
     null         => undef,
+    pangram      => 'The quick brown fox jumped over the lazy dog',
     short        => 32_767,
     short_neg    => -32_768,
     snowman      => "\N{SNOWMAN}",

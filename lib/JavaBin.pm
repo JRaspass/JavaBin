@@ -3,7 +3,7 @@ package JavaBin;
 use strict;
 use warnings;
 
-my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
+my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
 
 @dispatch = (
     # null
@@ -64,11 +64,19 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
     },
 );
 
+# These datatypes are matched by taking the tag byte, shifting it by 5 so to only read
+# the first 3 bits of the tag byte, giving it a range or 0-7 inclusive.
+#
+# The remaining 5 bits can then be used to store the size of the datatype, e.g. how
+# many chars in a string, this therefore has a range of 0-31, if the size exceeds or
+# matches this then an additional vint is added.
+#
+# The overview of the tag byte is therefore TTTSSSSS with T and S being type and size.
 @dispatch_shift = (
     undef,
     # string
     sub {
-        utf8::decode my $string = substr $bytes, 0, read_size(), '';
+        utf8::decode my $string = substr $bytes, 0, ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size, '';
 
         $string;
     },
@@ -81,7 +89,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
         [
             map
                 &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
-                1 .. read_size()
+                1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size )
         ]
     },
     # ordered map
@@ -89,7 +97,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
         +{
             map
                 &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
-                1 .. read_size() * 2
+                1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size ) * 2
         }
     },
     # named list
@@ -97,18 +105,17 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
         +{
             map
                 &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
-                1 .. read_size() * 2
+                1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size ) * 2
         }
     },
     # extern string
     sub {
-        if ( my $size = read_size() ) {
+        if ( ( $size = $tag & 31 ) == 31 ? $size += _vint() : $size ) {
             $exts[$size - 1];
         }
         else {
-            $tag = ord substr $bytes, 0, 1, '';
-
-            utf8::decode my $string = substr $bytes, 0, read_size(), '';
+            utf8::decode my $string =
+                substr $bytes, 0, ( $size = ord( substr $bytes, 0, 1, '' ) & 31 ) == 31 ? 31 + _vint() : $size, '';
 
             push @exts, $string;
 
@@ -130,14 +137,6 @@ sub import {
     no strict 'refs';
 
     *{ caller() . '::from_javabin' } = \&from_javabin;
-}
-
-sub read_size {
-    my $size = $tag & 0x1f;
-
-    $size += _vint() if $size == 0x1f;
-
-    $size;
 }
 
 sub read_small_int {

@@ -21,6 +21,7 @@ public class MakeData {
                 put("long", 9_223_372_036_854_775_807L);
                 put("long_neg", -9_223_372_036_854_775_808L);
                 put("null", null);
+                put("pangram", "The quick brown fox jumped over the lazy dog");
                 put("short", (short)32_767);
                 put("short_neg", (short)-32_768);
                 put("snowman", "☃");

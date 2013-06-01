@@ -143,7 +143,7 @@ sub _vint {
 
     $value |= ( ( $byte = ord substr $bytes, 0, 1, '' ) & 127 ) << ( $shift += 7 ) while $byte & 128;
 
-    return $value;
+    $value;
 }
 
 

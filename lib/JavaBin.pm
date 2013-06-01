@@ -31,7 +31,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },
     # map
-    sub { +{ map &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] }, 1 .. read_v_int() * 2 } },
+    sub { +{ map &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] }, 1 .. _vint() * 2 } },
     # solr doc
     sub { &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] } },
     # solr doc list
@@ -46,7 +46,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
         \%result;
     },
     # byte array
-    sub { [ unpack 'c*', substr $bytes, 0, read_v_int(), '' ] },
+    sub { [ unpack 'c*', substr $bytes, 0, _vint(), '' ] },
     # iterator
     sub {
         my @array;
@@ -111,26 +111,10 @@ sub from_javabin {
     &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] };
 }
 
-sub read_v_int {
-    my $byte = ord substr $bytes, 0, 1, '';
-
-    my $result = $byte & 0x7f;
-
-    my $shift;
-
-    while ( $byte & 0x80 ) {
-        $byte = ord substr $bytes, 0, 1, '';
-
-        $result |= ( $byte & 0x7f ) << ( $shift += 7 );
-    }
-
-    $result;
-}
-
 sub read_size {
     my $size = $tag & 0x1f;
 
-    $size += read_v_int() if $size == 0x1f;
+    $size += _vint() if $size == 0x1f;
 
     $size;
 }
@@ -138,9 +122,29 @@ sub read_size {
 sub read_small_int {
     my $result = $tag & 0x0f;
 
-    $result = read_v_int() << 4 | $result if $tag & 0x10;
+    $result = _vint() << 4 | $result if $tag & 0x10;
 
     $result;
 }
+
+# A prive setter of bytes to allow unit testing.
+sub _bytes {
+    $bytes = pop;
+
+    shift;
+}
+
+# Lucene variable-length +ve integer, the MSB indicates wether you need another octet.
+# http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
+sub _vint {
+    my ( $byte, $shift, $value );
+
+    $value = ( $byte = ord substr $bytes, 0, 1, '' ) & 127;
+
+    $value |= ( ( $byte = ord substr $bytes, 0, 1, '' ) & 127 ) << ( $shift += 7 ) while $byte & 128;
+
+    return $value;
+}
+
 
 1;

@@ -6,6 +6,15 @@ use charnames ':full';
 use JavaBin;
 use Test::More;
 
+my %vints = (
+    127    => [ 0x7F ],
+    128    => [ 0x80, 0x01 ],
+    16_383 => [ 0xFF, 0x7F ],
+    16_384 => [ 0x80, 0x80, 0x01 ],
+);
+
+is( JavaBin->_bytes( pack 'C*', @{ $vints{$_} } )->_vint, $_, "_vint $_" ) for sort keys %vints;
+
 open my $fh, '<', 't/data';
 
 is_deeply from_javabin( do { local $/; <$fh> } ), {
@@ -26,6 +35,6 @@ is_deeply from_javabin( do { local $/; <$fh> } ), {
     short_neg    => -32_768,
     snowman      => "\N{SNOWMAN}",
     true         => 1,
-};
+}, 'from_javabin';
 
 done_testing;

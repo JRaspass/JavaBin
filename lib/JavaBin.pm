@@ -31,7 +31,13 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },
     # map
-    sub { +{ map &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] }, 1 .. _vint() * 2 } },
+    sub {
+        +{
+            map
+                &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
+                1 .. _vint() * 2
+        }
+    },
     # solr doc
     sub { &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] } },
     # solr doc list
@@ -51,7 +57,8 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
     sub {
         my @array;
 
-        push @array, &{ $dispatch_shift[ $tag >> 5 ] || $dispatch[$tag] } until ( $tag = ord substr $bytes, 0, 1, '' ) == 15;
+        push @array, &{ $dispatch_shift[ $tag >> 5 ] || $dispatch[$tag] }
+            until ( $tag = ord substr $bytes, 0, 1, '' ) == 15;
 
         \@array;
     },
@@ -70,11 +77,29 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $tag );
     # small long
     sub { read_small_int() },
     # array
-    sub { [ map &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] }, 1 .. read_size() ] },
+    sub {
+        [
+            map
+                &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
+                1 .. read_size()
+        ]
+    },
     # ordered map
-    sub { +{ map &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] }, 1 .. read_size() * 2 } },
+    sub {
+        +{
+            map
+                &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
+                1 .. read_size() * 2
+        }
+    },
     # named list
-    sub { +{ map &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] }, 1 .. read_size() * 2 } },
+    sub {
+        +{
+            map
+                &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
+                1 .. read_size() * 2
+        }
+    },
     # extern string
     sub {
         if ( my $size = read_size() ) {

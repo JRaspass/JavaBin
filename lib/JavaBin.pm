@@ -5,7 +5,7 @@ use warnings;
 
 use Filter::cpp;
 
-#define BYTES($num) substr $bytes, 0, $num, ''
+# define BYTES($num) substr $bytes, 0, $num, ''
 
 my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
 
@@ -128,7 +128,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
 );
 
 sub from_javabin {
-    # skip the version byte
+    # Read the input into $bytes whilst skipping the version byte.
     $bytes = substr shift, 1;
 
     @exts = ();
@@ -150,7 +150,7 @@ sub read_small_int {
     $result;
 }
 
-# A prive setter of bytes to allow unit testing.
+# A private setter of bytes to allow unit testing.
 sub _bytes {
     $bytes = pop;
 
@@ -168,6 +168,5 @@ sub _vint {
 
     $value;
 }
-
 
 1;

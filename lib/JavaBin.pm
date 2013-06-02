@@ -3,6 +3,10 @@ package JavaBin;
 use strict;
 use warnings;
 
+use Filter::cpp;
+
+#define BYTES($num) substr $bytes, 0, $num, ''
+
 my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
 
 @dispatch = (
@@ -13,20 +17,20 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
     # bool false
     sub { 0 },
     # byte
-    sub { unpack 'c', substr $bytes, 0, 1, '' },
+    sub { unpack 'c', BYTES(1) },
     # short
-    sub { unpack 's>', substr $bytes, 0, 2, '' },
+    sub { unpack 's>', BYTES(2) },
     # double
-    sub { unpack 'd>', substr $bytes, 0, 8, '' },
+    sub { unpack 'd>', BYTES(8) },
     # int
-    sub { unpack 'i>', substr $bytes, 0, 4, '' },
+    sub { unpack 'i>', BYTES(4) },
     # long
-    sub { unpack 'q>', substr $bytes, 0, 8, '' },
+    sub { unpack 'q>', BYTES(8) },
     # float,
-    sub { unpack 'f>', substr $bytes, 0, 4, '' },
+    sub { unpack 'f>', BYTES(4) },
     # date
     sub {
-        my ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q>', substr $bytes, 0, 8, '' ) / 1000 );
+        my ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q>', BYTES(8) ) / 1000 );
 
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },
@@ -34,31 +38,31 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
     sub {
         +{
             map
-                &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
+                &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] },
                 1 .. _vint() * 2
         }
     },
     # solr doc
-    sub { &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] } },
+    sub { &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] } },
     # solr doc list
     sub {
         my %result;
 
         @result{qw/numFound start maxScore docs/} = (
-            @{ &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] } },
-               &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
+            @{ &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] } },
+               &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] },
         );
 
         \%result;
     },
     # byte array
-    sub { [ unpack 'c*', substr $bytes, 0, _vint(), '' ] },
+    sub { [ unpack 'c*', BYTES(_vint()) ] },
     # iterator
     sub {
         my @array;
 
         push @array, &{ $dispatch_shift[ $tag >> 5 ] || $dispatch[$tag] }
-            until ( $tag = ord substr $bytes, 0, 1, '' ) == 15;
+            until ( $tag = ord BYTES(1) ) == 15;
 
         \@array;
     },
@@ -76,7 +80,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
     undef,
     # string
     sub {
-        utf8::decode my $string = substr $bytes, 0, ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size, '';
+        utf8::decode my $string = BYTES( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size );
 
         $string;
     },
@@ -88,7 +92,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
     sub {
         [
             map
-                &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
+                &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] },
                 1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size )
         ]
     },
@@ -96,7 +100,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
     sub {
         +{
             map
-                &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
+                &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] },
                 1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size ) * 2
         }
     },
@@ -104,7 +108,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
     sub {
         +{
             map
-                &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] },
+                &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] },
                 1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size ) * 2
         }
     },
@@ -114,8 +118,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
             $exts[$size - 1];
         }
         else {
-            utf8::decode my $string =
-                substr $bytes, 0, ( $size = ord( substr $bytes, 0, 1, '' ) & 31 ) == 31 ? 31 + _vint() : $size, '';
+            utf8::decode my $string = BYTES( ( $size = ord( BYTES(1) ) & 31 ) == 31 ? 31 + _vint() : $size );
 
             push @exts, $string;
 
@@ -130,7 +133,7 @@ sub from_javabin {
 
     @exts = ();
 
-    &{ $dispatch_shift[ ( $tag = ord substr $bytes, 0, 1, '' ) >> 5 ] || $dispatch[$tag] };
+    &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] };
 }
 
 sub import {
@@ -159,9 +162,9 @@ sub _bytes {
 sub _vint {
     my ( $byte, $shift, $value );
 
-    $value = ( $byte = ord substr $bytes, 0, 1, '' ) & 127;
+    $value = ( $byte = ord BYTES(1) ) & 127;
 
-    $value |= ( ( $byte = ord substr $bytes, 0, 1, '' ) & 127 ) << ( $shift += 7 ) while $byte & 128;
+    $value |= ( ( $byte = ord BYTES(1) ) & 127 ) << ( $shift += 7 ) while $byte & 128;
 
     $value;
 }

@@ -1,7 +1,6 @@
 install: cpanm Filter::cpp
 language: perl
 perl:
-    - "5.18"
     - "5.17"
     - "5.16"
     - "5.14"

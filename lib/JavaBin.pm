@@ -6,6 +6,7 @@ use warnings;
 use Filter::cpp;
 
 # define BYTES($num) substr $bytes, 0, $num, ''
+# define DISPATCH &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] }
 
 my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
 
@@ -35,23 +36,14 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
         sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
     },
     # map
-    sub {
-        +{
-            map
-                &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] },
-                1 .. _vint() * 2
-        }
-    },
+    sub { +{ map DISPATCH, 1 .. _vint() * 2 } },
     # solr doc
-    sub { &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] } },
+    sub { DISPATCH },
     # solr doc list
     sub {
         my %result;
 
-        @result{qw/numFound start maxScore docs/} = (
-            @{ &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] } },
-               &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] },
-        );
+        @result{qw/numFound start maxScore docs/} = ( @{ DISPATCH }, DISPATCH );
 
         \%result;
     },
@@ -89,29 +81,11 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
     # small long
     sub { read_small_int() },
     # array
-    sub {
-        [
-            map
-                &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] },
-                1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size )
-        ]
-    },
+    sub { [ map DISPATCH, 1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size ) ] },
     # ordered map
-    sub {
-        +{
-            map
-                &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] },
-                1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size ) * 2
-        }
-    },
+    sub { +{ map DISPATCH, 1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size ) * 2 } },
     # named list
-    sub {
-        +{
-            map
-                &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] },
-                1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size ) * 2
-        }
-    },
+    sub { +{ map DISPATCH, 1 .. ( ( $size = $tag & 31 ) == 31 ? 31 + _vint() : $size ) * 2 } },
     # extern string
     sub {
         if ( ( $size = $tag & 31 ) == 31 ? $size += _vint() : $size ) {
@@ -133,7 +107,7 @@ sub from_javabin {
 
     @exts = ();
 
-    &{ $dispatch_shift[ ( $tag = ord BYTES(1) ) >> 5 ] || $dispatch[$tag] };
+    DISPATCH;
 }
 
 sub import {

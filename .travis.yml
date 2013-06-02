@@ -1,4 +1,4 @@
-install: ""
+install: cpanm Filter::cpp
 language: perl
 perl:
     - "5.18"

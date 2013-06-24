@@ -24,7 +24,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
     # double
     sub { unpack 'd>', BYTES(8) },
     # int
-    sub { unpack 'i>', BYTES(4) },
+    sub { unpack 'l>', BYTES(4) },
     # long
     sub { unpack 'q>', BYTES(8) },
     # float,
@@ -101,7 +101,7 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
     },
 );
 
-sub from_javabin {
+sub from_javabin($) {
     # Read the input into $bytes whilst skipping the version byte.
     $bytes = substr shift, 1;
 

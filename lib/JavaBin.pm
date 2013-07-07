@@ -145,8 +145,6 @@ sub _vint {
 
 1;
 
-__END__
-
 =head1 NAME
 
 JavaBin - Apache Solr JavaBin (de)serializer

@@ -3,9 +3,8 @@ use warnings;
 
 use charnames ':full';
 
+use JavaBin;
 use Test::More;
-
-BEGIN { use_ok 'JavaBin' }
 
 note 'constants';
 

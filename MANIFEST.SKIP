@@ -1,6 +1,6 @@
 ~$
+\.ini$
 ^bench/
-^dist\.ini$
 ^MANIFEST\.SKIP$
 ^README\.md$
 ^t/MakeData

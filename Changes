@@ -1,4 +1,5 @@
 0.2 ???
+    - Work around 32bit issues in tests, document limitation.
 
 0.1 2013-07-07
     - Initial release.

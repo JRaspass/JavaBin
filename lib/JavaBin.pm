@@ -172,6 +172,13 @@ This function does no error checking, hand it invalid JavaBin and it will probab
 
 =head1 CAVEATS
 
+To (de)serialize long floats and ints this package requires a 64bit Perl.
+That said, it won't actually throw unless it encounters such data, and therefore
+the tests for such data are skipped on 32bit platforms.
+
+Technically this limitation could be worked around by use of L<bigint> or such.
+But the added complexity and maintanace cost would outweight the benifit.
+
 Due to the differences between Java and Perl not all data structures can be mapped one-to-one.
 
 An example of such mapping is a Java interator whcih becomes a Perl array during deserialization.

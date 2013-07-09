@@ -1,5 +1,6 @@
-SOLR=~/Downloads/solr-4.3.0
+VER=4.3.1
+SOLR=~/Downloads/solr-$VER
 
-javac -cp "$SOLR/dist/solr-solrj-4.3.0.jar" MakeData.java
+javac -cp $SOLR/dist/solr-solrj-$VER.jar MakeData.java
 
-java -cp "$SOLR/dist/solr-solrj-4.3.0.jar:$SOLR/dist/solrj-lib/*:." MakeData
+java -cp $SOLR/dist/solr-solrj-$VER.jar:$SOLR/dist/solrj-lib/*:. MakeData

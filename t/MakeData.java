@@ -12,7 +12,6 @@ public class MakeData {
                 put("byte", (byte)127);
                 put("byte_array", new byte[]{-128, 0, 127});
                 put("byte_neg", (byte)-128);
-                put("date", new Date(613_180_800_000L));
                 put("double", 1.797_693_134_862_31e308);
                 put("iterator", Arrays.asList(new String[]{"qux", "baz", "bar", "foo"}).iterator());
                 put("false", false);

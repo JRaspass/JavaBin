@@ -1,4 +1,7 @@
-0.2 ???
+0.3 2013-07-15
+    - Work around 32bit issues in tests, again.
+
+0.2 2013-07-09
     - Revert to Module::Build as some testers lack Module::Build::Tiny.
     - Work around 32bit issues in tests, document limitation.
 

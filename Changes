@@ -1,3 +1,6 @@
+0.4 ???
+    - Add millisecond precision to dates.
+
 0.3 2013-07-15
     - Work around 32bit issues in tests, again.
 

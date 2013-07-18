@@ -32,9 +32,11 @@ my ( $bytes, @dispatch, @dispatch_shift, @exts, $size, $tag );
     sub { unpack 'f>', BYTES(4) },
     # date
     sub {
-        my ( $s, $m, $h, $d, $M, $y ) = gmtime( unpack( 'q>', BYTES(8) ) / 1000 );
+        my $long = unpack 'q>', BYTES(8);
 
-        sprintf '%d-%02d-%02dT%02d:%02d:%02dZ', $y + 1900, $M + 1, $d, $h, $m, $s;
+        my ( $s, $m, $h, $d, $M, $y ) = gmtime $long / 1000;
+
+        sprintf '%d-%02d-%02dT%02d:%02d:%02d.%03dZ', $y + 1900, $M + 1, $d, $h, $m, $s, $long % 1000;
     },
     # map
     sub { +{ map DISPATCH, 1 .. _vint() * 2 } },

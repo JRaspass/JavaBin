@@ -6,6 +6,10 @@ use charnames ':full';
 use JavaBin;
 use Test::More;
 
+sub slurp($) { open my $fh, '<', @_ or die $!; local $/; <$fh> }
+
+chdir 't/data' or die $!;
+
 note 'constants';
 
 is from_javabin "\0\0", undef, 'undef';
@@ -14,70 +18,31 @@ is from_javabin "\0\2", 0, 'false';
 
 note 'bytes';
 
-is from_javabin( "\0\3" . pack 'c', $_ ), $_, "byte $_" for qw/-128
-                                                                0
-                                                                127/;
+is from_javabin(slurp "byte-$_"), $_, "byte $_" for sort { $a <=> $b } map /byte-(.*)/, <byte-*>;
 
 note 'shorts';
 
-is from_javabin( "\0\4" . pack 's>', $_ ), $_, "short $_" for qw/-32768
-                                                                 -129
-                                                                  0
-                                                                  128
-                                                                  32767/;
+is from_javabin(slurp "short-$_"), $_, "short $_" for sort { $a <=> $b } map /short-(.*)/, <short-*>;
 
 note 'ints';
 
-is from_javabin( "\0\6" . pack 'l>', $_ ), $_, "int $_" for qw/-2147483648
-                                                               -8388609
-                                                               -32769
-                                                               -129
-                                                                0
-                                                                128
-                                                                32768
-                                                                8388608
-                                                                2147483647/;
+is from_javabin(slurp "int-$_"), $_, "int $_" for sort { $a <=> $b } map /int-(.*)/, <int-*>;
 
 note 'longs';
 
 SKIP: {
     skip '64bit ints are unsupported on your platform.', 1 unless eval { pack 'q' };
 
-    is from_javabin( "\0\7" . pack 'q>', $_ ), $_, "long $_" for qw/-9223372036854775808
-                                                                    -36028797018963969
-                                                                    -140737488355329
-                                                                    -549755813889
-                                                                    -2147483649
-                                                                    -8388609
-                                                                    -32769
-                                                                    -129
-                                                                     0
-                                                                     128
-                                                                     32768
-                                                                     8388608
-                                                                     2147483648
-                                                                     549755813888
-                                                                     140737488355328
-                                                                     36028797018963968
-                                                                     9223372036854775807/;
+    is from_javabin(slurp "long-$_"), $_, "long $_" for sort { $a <=> $b } map /long-(.*)/, <long-*>;
 };
 
-note 'vints';
+note 'dates';
 
-my %vints = (
-    127    => [ 0x7F ],
-    128    => [ 0x80, 0x01 ],
-    16_383 => [ 0xFF, 0x7F ],
-    16_384 => [ 0x80, 0x80, 0x01 ],
-);
-
-is( JavaBin->_bytes( pack 'C*', @{ $vints{$_} } )->_vint, $_, "vint $_" ) for sort keys %vints;
+/date-(.*)/ && is from_javabin(slurp $_), $1, "date $1" for <date-*>;
 
 note 'all';
 
-open my $fh, '<', 't/data';
-
-is_deeply from_javabin( do { local $/; <$fh> } ), {
+is_deeply from_javabin(slurp 'all'), {
     array        => [qw/foo bar baz qux/],
     byte         => 127,
     byte_array   => [qw/-128 0 127/],
@@ -93,6 +58,6 @@ is_deeply from_javabin( do { local $/; <$fh> } ), {
     short_neg    => -32_768,
     snowman      => "\N{SNOWMAN}",
     true         => 1,
-}, 'from_javabin';
+}, 'all';
 
 done_testing;

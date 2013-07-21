@@ -2,16 +2,16 @@
 #include "perl.h"
 #include "XSUB.h"
 
-uint8_t *bytes, pos, tag;
+uint8_t *bytes, tag;
 
 // Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
 // http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
 uint32_t variable_int(void) {
     uint8_t shift;
-    uint32_t result = ( tag = bytes[pos++] ) & 127;
+    uint32_t result = (tag = *(bytes++)) & 127;
 
     for (shift = 7; tag & 128; shift += 7)
-        result |= ((uint32_t)((tag = bytes[pos++]) & 127)) << shift;
+        result |= ((uint32_t)((tag = *(bytes++)) & 127)) << shift;
 
     return result;
 }
@@ -19,10 +19,10 @@ uint32_t variable_int(void) {
 // Like above, this is the long variant.
 uint64_t variable_long(void) {
     uint8_t shift;
-    uint64_t result = ( tag = bytes[pos++] ) & 127;
+    uint64_t result = (tag = *(bytes++)) & 127;
 
     for (shift = 7; tag & 128; shift += 7)
-        result |= ((uint64_t)((tag = bytes[pos++]) & 127)) << shift;
+        result |= ((uint64_t)((tag = *(bytes++)) & 127)) << shift;
 
     return result;
 }
@@ -33,12 +33,12 @@ SV* read_bool_true(void) { return newSVuv(1); }
 
 SV* read_bool_false(void) { return newSVuv(0); }
 
-SV* read_byte(void) { return newSViv( (int8_t) bytes[pos++] ); }
+SV* read_byte(void) { return newSViv((int8_t) *(bytes++)); }
 
 SV* read_short(void) {
-    pos += 2;
+    bytes += 2;
 
-    return newSViv( (int16_t) ( ( bytes[pos - 2] << 8 ) | bytes[pos - 1] ) );
+    return newSViv( (int16_t) ( ( *(bytes - 2) << 8 ) | *(bytes - 1) ) );
 }
 
 SV* read_double(void) { return newSVuv(0); }
@@ -46,40 +46,40 @@ SV* read_double(void) { return newSVuv(0); }
 SV* read_int(void) {
     // This is from network (big) endian to intel (little) endian.
     // TODO test/write alternative for POWER PC (big)
-    pos += 4;
+    bytes += 4;
 
-    return newSViv( (int32_t) ( ( bytes[pos - 4] << 24 ) |
-                                ( bytes[pos - 3] << 16 ) |
-                                ( bytes[pos - 2] << 8  ) |
-                                ( bytes[pos - 1] ) ) );
+    return newSViv( (int32_t) ( ( *(bytes - 4) << 24 ) |
+                                ( *(bytes - 3) << 16 ) |
+                                ( *(bytes - 2) << 8  ) |
+                                ( *(bytes - 1) ) ) );
 }
 
 SV* read_long(void) {
-    pos += 8;
+    bytes += 8;
 
-    return newSViv( (int64_t) ( ( (uint64_t) bytes[pos - 8] << 56 ) |
-                                ( (uint64_t) bytes[pos - 7] << 48 ) |
-                                ( (uint64_t) bytes[pos - 6] << 40 ) |
-                                ( (uint64_t) bytes[pos - 5] << 32 ) |
-                                ( (uint64_t) bytes[pos - 4] << 24 ) |
-                                ( (uint64_t) bytes[pos - 3] << 16 ) |
-                                ( (uint64_t) bytes[pos - 2] << 8  ) |
-                                ( (uint64_t) bytes[pos - 1] ) ) );
+    return newSViv( (int64_t) ( ( (uint64_t) *(bytes - 8) << 56 ) |
+                                ( (uint64_t) *(bytes - 7) << 48 ) |
+                                ( (uint64_t) *(bytes - 6) << 40 ) |
+                                ( (uint64_t) *(bytes - 5) << 32 ) |
+                                ( (uint64_t) *(bytes - 4) << 24 ) |
+                                ( (uint64_t) *(bytes - 3) << 16 ) |
+                                ( (uint64_t) *(bytes - 2) << 8  ) |
+                                ( (uint64_t) *(bytes - 1) ) ) );
 }
 
 SV* read_float(void) { return newSVuv(0); }
 
 SV* read_date(void) {
-    pos += 8;
+    bytes += 8;
 
-    uint64_t date_ms = ( ( (uint64_t) bytes[pos - 8] << 56 ) |
-                         ( (uint64_t) bytes[pos - 7] << 48 ) |
-                         ( (uint64_t) bytes[pos - 6] << 40 ) |
-                         ( (uint64_t) bytes[pos - 5] << 32 ) |
-                         ( (uint64_t) bytes[pos - 4] << 24 ) |
-                         ( (uint64_t) bytes[pos - 3] << 16 ) |
-                         ( (uint64_t) bytes[pos - 2] << 8  ) |
-                         ( (uint64_t) bytes[pos - 1] ) );
+    uint64_t date_ms = ( ( (uint64_t) *(bytes - 8) << 56 ) |
+                         ( (uint64_t) *(bytes - 7) << 48 ) |
+                         ( (uint64_t) *(bytes - 6) << 40 ) |
+                         ( (uint64_t) *(bytes - 5) << 32 ) |
+                         ( (uint64_t) *(bytes - 4) << 24 ) |
+                         ( (uint64_t) *(bytes - 3) << 16 ) |
+                         ( (uint64_t) *(bytes - 2) << 8  ) |
+                         ( (uint64_t) *(bytes - 1) ) );
 
     time_t date = date_ms / 1000;
 
@@ -103,7 +103,7 @@ SV* read_byte_array(void) {
     uint32_t i, size = variable_int();
 
     for ( i = 0; i < size; i++ )
-        av_store(array, i, newSViv( (int8_t) bytes[pos++] ));
+        av_store(array, i, newSViv((int8_t) *(bytes++)));
 
     return newRV_noinc((SV*) array);
 }
@@ -114,9 +114,9 @@ SV* read_string(void) {
     if ( length == 31 )
         length += variable_int();
 
-    SV *string = newSVpv(bytes + pos, length);
+    SV *string = newSVpv(bytes, length);
 
-    pos += length;
+    bytes += length;
 
     SvUTF8_on(string);
 
@@ -179,10 +179,10 @@ SV *from_javabin(input)
     unsigned char *input
     PROTOTYPE: $
     CODE:
-        bytes = input;
-        pos = 1;
+        // Skip the version byte.
+        bytes = input + 1;
 
-        tag = bytes[pos++];
+        tag = *(bytes++);
 
         //fprintf(stderr, "type = %d or %d\n", tag >> 5, tag);
 

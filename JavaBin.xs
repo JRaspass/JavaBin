@@ -100,9 +100,7 @@ SV* read_date(void) {
 
 SV* read_byte_array(void) {
     AV *array = newAV();
-
-    uint32_t i;
-    uint32_t size = variable_int();
+    uint32_t i, size = variable_int();
 
     for ( i = 0; i < size; i++ )
         av_store(array, i, newSViv( (int8_t) bytes[pos++] ));

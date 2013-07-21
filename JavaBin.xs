@@ -99,9 +99,14 @@ SV* read_date(void) {
 }
 
 SV* read_string(void) {
-    uint8_t length = tag & 31;
+    uint32_t length = tag & 31;
 
-    SV *string = newSVpv(bytes + pos, length == 31 ? length + variable_int() : length);
+    if ( length == 31 )
+        length += variable_int();
+
+    SV *string = newSVpv(bytes + pos, length);
+
+    pos += length;
 
     SvUTF8_on(string);
 

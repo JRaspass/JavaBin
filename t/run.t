@@ -6,6 +6,8 @@ use charnames ':full';
 use JavaBin;
 use Test::More;
 
+binmode Test::More->builder->$_, ':utf8' for qw/failure_output output todo_output/;
+
 sub slurp($) { open my $fh, '<', @_ or die $!; local $/; <$fh> }
 
 chdir 't/data' or die $!;
@@ -39,6 +41,14 @@ SKIP: {
 note 'dates';
 
 /date-(.*)/ && is from_javabin(slurp $_), $1, "date $1" for <date-*>;
+
+note 'strings';
+
+for ( sort map /string-(.*)/, <string-*> ) {
+    utf8::decode $_;
+
+    is from_javabin(slurp "string-$_"), $_, "string $_";
+}
 
 #note 'all';
 

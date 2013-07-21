@@ -98,7 +98,15 @@ SV* read_date(void) {
     return newSVpv(date_str, 24);
 }
 
-SV* read_string(void) { return newSVuv(0); }
+SV* read_string(void) {
+    uint8_t length = tag & 31;
+
+    SV *string = newSVpv(bytes + pos, length == 31 ? length + variable_int() : length);
+
+    SvUTF8_on(string);
+
+    return string;
+}
 
 SV* read_small_int(void) {
     uint32_t result = tag & 15;
@@ -131,6 +139,14 @@ SV *(*dispatch[10])(void) = {
     read_date,
 };
 
+/* These datatypes are matched by taking the tag byte, shifting it by 5 so to only read
+   the first 3 bits of the tag byte, giving it a range or 0-7 inclusive.
+
+   The remaining 5 bits can then be used to store the size of the datatype, e.g. how
+   many chars in a string, this therefore has a range of 0-31, if the size exceeds or
+   matches this then an additional vint is added.
+
+   The overview of the tag byte is therefore TTTSSSSS with T and S being type and size. */
 SV *(*dispatch_shift[4])(void) = {
     NULL,
     read_string,

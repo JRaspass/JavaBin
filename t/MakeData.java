@@ -62,6 +62,10 @@ public class MakeData {
                 jbc.marshal(sdf.parse(date), new FileOutputStream("data/date-" + date));
             }
 
+            for (String str : new String[]{"Grüßen", "The quick brown fox jumped over the lazy dog"}) {
+                 jbc.marshal(str, new FileOutputStream("data/string-" + str));
+            }
+
             jbc.marshal(new HashMap<String, Object>(){{
                 put("array", new String[]{"foo", "bar", "baz", "qux"});
                 put("byte", (byte)127);

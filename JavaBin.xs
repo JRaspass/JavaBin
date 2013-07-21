@@ -46,10 +46,9 @@ SV* read_bool_false(void) { return newSVuv(0); }
 SV* read_byte(void) { return newSViv( (int8_t) bytes[pos++] ); }
 
 SV* read_short(void) {
-    fprintf(stderr, "%d%d%d%d%d%d%d%d\n", BYTETOBINARY(bytes[pos]));
-    fprintf(stderr, "%d%d%d%d%d%d%d%d\n\n", BYTETOBINARY(bytes[pos + 1]));
+    pos += 2;
 
-    return newSViv( (int16_t) ( ( bytes[pos++] << 8 ) | bytes[pos++] ) );
+    return newSViv( (int16_t) ( ( bytes[pos - 2] << 8 ) | bytes[pos - 1] ) );
 }
 
 SV* read_double(void) { return newSVuv(0); }
@@ -57,34 +56,40 @@ SV* read_double(void) { return newSVuv(0); }
 SV* read_int(void) {
     // This is from network (big) endian to intel (little) endian.
     // TODO test/write alternative for POWER PC (big)
-    return newSViv( (int32_t) ( ( bytes[pos++] << 24 ) |
-                                ( bytes[pos++] << 16 ) |
-                                ( bytes[pos++] << 8  ) |
-                                ( bytes[pos++] ) ) );
+    pos += 4;
+
+    return newSViv( (int32_t) ( ( bytes[pos - 4] << 24 ) |
+                                ( bytes[pos - 3] << 16 ) |
+                                ( bytes[pos - 2] << 8  ) |
+                                ( bytes[pos - 1] ) ) );
 }
 
 SV* read_long(void) {
-    return newSViv( (int64_t) ( ( (uint64_t) bytes[pos++] << 56 ) |
-                                ( (uint64_t) bytes[pos++] << 48 ) |
-                                ( (uint64_t) bytes[pos++] << 40 ) |
-                                ( (uint64_t) bytes[pos++] << 32 ) |
-                                ( (uint64_t) bytes[pos++] << 24 ) |
-                                ( (uint64_t) bytes[pos++] << 16 ) |
-                                ( (uint64_t) bytes[pos++] << 8  ) |
-                                ( (uint64_t) bytes[pos++] ) ) );
+    pos += 8;
+
+    return newSViv( (int64_t) ( ( (uint64_t) bytes[pos - 8] << 56 ) |
+                                ( (uint64_t) bytes[pos - 7] << 48 ) |
+                                ( (uint64_t) bytes[pos - 6] << 40 ) |
+                                ( (uint64_t) bytes[pos - 5] << 32 ) |
+                                ( (uint64_t) bytes[pos - 4] << 24 ) |
+                                ( (uint64_t) bytes[pos - 3] << 16 ) |
+                                ( (uint64_t) bytes[pos - 2] << 8  ) |
+                                ( (uint64_t) bytes[pos - 1] ) ) );
 }
 
 SV* read_float(void) { return newSVuv(0); }
 
 SV* read_date(void) {
-    uint64_t date_ms = ( ( (uint64_t) bytes[pos++] << 56 ) |
-                         ( (uint64_t) bytes[pos++] << 48 ) |
-                         ( (uint64_t) bytes[pos++] << 40 ) |
-                         ( (uint64_t) bytes[pos++] << 32 ) |
-                         ( (uint64_t) bytes[pos++] << 24 ) |
-                         ( (uint64_t) bytes[pos++] << 16 ) |
-                         ( (uint64_t) bytes[pos++] << 8  ) |
-                         ( (uint64_t) bytes[pos++] ) );
+    pos += 8;
+
+    uint64_t date_ms = ( ( (uint64_t) bytes[pos - 8] << 56 ) |
+                         ( (uint64_t) bytes[pos - 7] << 48 ) |
+                         ( (uint64_t) bytes[pos - 6] << 40 ) |
+                         ( (uint64_t) bytes[pos - 5] << 32 ) |
+                         ( (uint64_t) bytes[pos - 4] << 24 ) |
+                         ( (uint64_t) bytes[pos - 3] << 16 ) |
+                         ( (uint64_t) bytes[pos - 2] << 8  ) |
+                         ( (uint64_t) bytes[pos - 1] ) );
 
     time_t date = date_ms / 1000;
 

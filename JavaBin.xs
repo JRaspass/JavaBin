@@ -98,6 +98,18 @@ SV* read_date(void) {
     return newSVpv(date_str, 24);
 }
 
+SV* read_byte_array(void) {
+    AV *array = newAV();
+
+    uint32_t i;
+    uint32_t size = variable_int();
+
+    for ( i = 0; i < size; i++ )
+        av_push(array, newSViv( (int8_t) bytes[pos++] ));
+
+    return newRV_noinc((SV*) array);
+}
+
 SV* read_string(void) {
     uint32_t length = tag & 31;
 
@@ -131,7 +143,7 @@ SV* read_small_long(void) {
     return newSVuv(result);
 }
 
-SV *(*dispatch[10])(void) = {
+SV *(*dispatch[14])(void) = {
     read_undef,
     read_bool_true,
     read_bool_false,
@@ -142,6 +154,10 @@ SV *(*dispatch[10])(void) = {
     read_long,
     read_float,
     read_date,
+    NULL,
+    NULL,
+    NULL,
+    read_byte_array,
 };
 
 /* These datatypes are matched by taking the tag byte, shifting it by 5 so to only read

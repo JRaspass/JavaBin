@@ -62,6 +62,8 @@ public class MakeData {
                 jbc.marshal(sdf.parse(date), new FileOutputStream("data/date-" + date));
             }
 
+            jbc.marshal(new byte[]{-128, 0, 127}, new FileOutputStream("data/byte_array"));
+
             for (String str : new String[]{"Grüßen", "The quick brown fox jumped over the lazy dog"}) {
                  jbc.marshal(str, new FileOutputStream("data/string-" + str));
             }

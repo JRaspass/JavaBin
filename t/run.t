@@ -42,6 +42,10 @@ note 'dates';
 
 /date-(.*)/ && is from_javabin(slurp $_), $1, "date $1" for <date-*>;
 
+note 'byte array';
+
+is_deeply from_javabin(slurp 'byte_array'), [qw/-128 0 127/], 'byte array';
+
 note 'strings';
 
 for ( sort map /string-(.*)/, <string-*> ) {

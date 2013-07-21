@@ -22,7 +22,20 @@ is from_javabin(slurp "byte-$_"), $_, "byte $_" for sort { $a <=> $b } map /byte
 
 note 'shorts';
 
-is from_javabin(slurp "short-$_"), $_, "short $_" for sort { $a <=> $b } map /short-(.*)/, <short-*>;
+for ( sort { $a <=> $b } map /short-(.*)/, <short-*> ) {
+    note $_;
+
+    my $bin = slurp "short-$_";
+
+    note map "$_\n", unpack('B*', $bin) =~ /\d{8}/g;
+
+    my $result = from_javabin $bin;
+
+    is $result, $_, "short $_";
+}
+
+done_testing;
+exit;
 
 note 'ints';
 

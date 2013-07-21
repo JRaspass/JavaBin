@@ -2,6 +2,16 @@
 #include "perl.h"
 #include "XSUB.h"
 
+#define BYTETOBINARY(byte)  \
+  (byte & 0x80 ? 1 : 0), \
+  (byte & 0x40 ? 1 : 0), \
+  (byte & 0x20 ? 1 : 0), \
+  (byte & 0x10 ? 1 : 0), \
+  (byte & 0x08 ? 1 : 0), \
+  (byte & 0x04 ? 1 : 0), \
+  (byte & 0x02 ? 1 : 0), \
+  (byte & 0x01 ? 1 : 0)
+
 uint8_t *bytes, pos, tag;
 
 // Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
@@ -36,6 +46,9 @@ SV* read_bool_false(void) { return newSVuv(0); }
 SV* read_byte(void) { return newSViv( (int8_t) bytes[pos++] ); }
 
 SV* read_short(void) {
+    fprintf(stderr, "%d%d%d%d%d%d%d%d\n", BYTETOBINARY(bytes[pos]));
+    fprintf(stderr, "%d%d%d%d%d%d%d%d\n\n", BYTETOBINARY(bytes[pos + 1]));
+
     return newSViv( (int16_t) ( ( bytes[pos++] << 8 ) | bytes[pos++] ) );
 }
 

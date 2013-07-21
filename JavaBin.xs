@@ -73,13 +73,19 @@ SV* read_date(void) {
                          ( (uint64_t) bytes[pos++] << 8  ) |
                          ( (uint64_t) bytes[pos++] ) );
 
-    time_t date = (uint64_t) date_ms / 1000;
+    time_t date = date_ms / 1000;
 
     struct tm *t = gmtime(&date);
 
     char date_str[25];
 
-    sprintf(date_str, "%d-%02d-%02dT%02d:%02d:%02d.%03dZ", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec, date_ms % 1000);
+    sprintf(date_str, "%u-%02u-%02uT%02u:%02u:%02u.%03uZ", t->tm_year + 1900,
+                                                           t->tm_mon + 1,
+                                                           t->tm_mday,
+                                                           t->tm_hour,
+                                                           t->tm_min,
+                                                           t->tm_sec,
+                                                           (uint32_t) (date_ms % 1000));
 
     return newSVpv(date_str, 24);
 }

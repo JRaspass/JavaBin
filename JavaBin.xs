@@ -105,7 +105,7 @@ SV* read_byte_array(void) {
     uint32_t size = variable_int();
 
     for ( i = 0; i < size; i++ )
-        av_push(array, newSViv( (int8_t) bytes[pos++] ));
+        av_store(array, i, newSViv( (int8_t) bytes[pos++] ));
 
     return newRV_noinc((SV*) array);
 }

@@ -72,14 +72,14 @@ SV* read_float(void) { return newSVuv(0); }
 SV* read_date(void) {
     bytes += 8;
 
-    uint64_t date_ms = ( ( (uint64_t) *(bytes - 8) << 56 ) |
-                         ( (uint64_t) *(bytes - 7) << 48 ) |
-                         ( (uint64_t) *(bytes - 6) << 40 ) |
-                         ( (uint64_t) *(bytes - 5) << 32 ) |
-                         ( (uint64_t) *(bytes - 4) << 24 ) |
-                         ( (uint64_t) *(bytes - 3) << 16 ) |
-                         ( (uint64_t) *(bytes - 2) << 8  ) |
-                         ( (uint64_t) *(bytes - 1) ) );
+    int64_t date_ms = ( ( (uint64_t) *(bytes - 8) << 56 ) |
+                        ( (uint64_t) *(bytes - 7) << 48 ) |
+                        ( (uint64_t) *(bytes - 6) << 40 ) |
+                        ( (uint64_t) *(bytes - 5) << 32 ) |
+                        ( (uint64_t) *(bytes - 4) << 24 ) |
+                        ( (uint64_t) *(bytes - 3) << 16 ) |
+                        ( (uint64_t) *(bytes - 2) << 8  ) |
+                        ( (uint64_t) *(bytes - 1) ) );
 
     time_t date = date_ms / 1000;
 

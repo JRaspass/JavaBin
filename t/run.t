@@ -40,7 +40,7 @@ SKIP: {
 
 note 'dates';
 
-/date-(.*)/ && is from_javabin(slurp $_), $1, "date $1" for <date-*>;
+is from_javabin(slurp "date-$_"), $_, "date $_" for sort map /date-(.*)/, <date-*>;
 
 note 'byte array';
 

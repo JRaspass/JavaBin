@@ -51,7 +51,7 @@ note 'strings';
 for ( sort map /string-(.*)/, <string-*> ) {
     utf8::decode $_;
 
-    is from_javabin(slurp "string-$_"), $_, "string $_";
+    is from_javabin(slurp "string-$_"), $_, qq/string "$_"/;
 }
 
 #note 'all';

@@ -1,7 +1,7 @@
 package JavaBin;
 # ABSTRACT: Apache Solr JavaBin (de)serializer
 
-use XSLoader .14;
+use XSLoader 0.14;
 
 XSLoader::load();
 

@@ -1,3 +1,4 @@
+install: cpanm -nq XSLoader
 language: perl
 perl:
     - "5.19"

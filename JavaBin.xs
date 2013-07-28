@@ -16,17 +16,6 @@ uint32_t variable_int(void) {
     return result;
 }
 
-// Like above, this is the long variant.
-uint64_t variable_long(void) {
-    uint8_t shift;
-    uint64_t result = (tag = *(bytes++)) & 127;
-
-    for (shift = 7; tag & 128; shift += 7)
-        result |= ((uint64_t)((tag = *(bytes++)) & 127)) << shift;
-
-    return result;
-}
-
 SV* read_undef(void) { return newSV(0); }
 
 SV* read_bool_true(void) { return newSVuv(1); }
@@ -135,8 +124,13 @@ SV* read_small_int(void) {
 SV* read_small_long(void) {
     uint64_t result = tag & 15;
 
-    if (tag & 16)
-        result = (variable_long() << 4) | result;
+    // Inlined variable-length +ve long code, see variable_int().
+    if (tag & 16) {
+        uint8_t shift = 4;
+
+        do result |= ((uint64_t)((tag = *(bytes++)) & 127)) << shift;
+        while (tag & 128 && (shift += 7));
+    }
 
     return newSVuv(result);
 }

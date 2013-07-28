@@ -1,4 +1,3 @@
-install: ""
 language: perl
 perl:
     - "5.19"

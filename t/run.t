@@ -14,9 +14,9 @@ chdir 't/data' or die $!;
 
 note 'constants';
 
-is from_javabin "\0\0", undef, 'undef';
-is from_javabin "\0\1", 1, 'true';
-is from_javabin "\0\2", 0, 'false';
+is from_javabin("\0\0"), undef, 'undef';
+is from_javabin("\0\1"), 1, 'true';
+is from_javabin("\0\2"), 0, 'false';
 
 note 'bytes';
 

@@ -171,7 +171,7 @@ MODULE = JavaBin PACKAGE = JavaBin
 
 SV *from_javabin(input)
     unsigned char *input
-    PROTOTYPE: $
+    PROTOTYPE: DISABLE
     CODE:
         // Skip the version byte.
         bytes = input + 1;

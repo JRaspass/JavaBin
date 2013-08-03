@@ -42,6 +42,10 @@ note 'dates';
 
 is from_javabin(slurp "date-$_"), $_, "date $_" for sort map /date-(.*)/, <date-*>;
 
+note 'hashes';
+
+is_deeply from_javabin(slurp "hash-$_"), eval, "hash $_" for sort map /hash-(.*)/, <hash-*>;
+
 note 'byte array';
 
 is_deeply from_javabin(slurp 'byte_array'), [qw/-128 0 127/], 'byte array';

@@ -2,7 +2,66 @@
 #include "perl.h"
 #include "XSUB.h"
 
-uint8_t *bytes, tag;
+#define DISPATCH tag >> 5 ? dispatch_shift[tag >> 5]() : dispatch[tag]()
+
+uint8_t *bytes, cache_pos, tag;
+
+// FIXME cache should dynamically size.
+SV *cache[100];
+
+SV* read_undef(void);
+SV* read_bool_true(void);
+SV* read_bool_false(void);
+SV* read_byte(void);
+SV* read_short(void);
+SV* read_double(void);
+SV* read_int(void);
+SV* read_long(void);
+SV* read_float(void);
+SV* read_date(void);
+SV* read_hash(void);
+SV* read_byte_array(void);
+
+SV *(*dispatch[14])(void) = {
+    read_undef,
+    read_bool_true,
+    read_bool_false,
+    read_byte,
+    read_short,
+    read_double,
+    read_int,
+    read_long,
+    read_float,
+    read_date,
+    read_hash,
+    NULL,
+    NULL,
+    read_byte_array,
+};
+
+/* These datatypes are matched by taking the tag byte, shifting it by 5 so to only read
+   the first 3 bits of the tag byte, giving it a range or 0-7 inclusive.
+
+   The remaining 5 bits can then be used to store the size of the datatype, e.g. how
+   many chars in a string, this therefore has a range of 0-31, if the size exceeds or
+   matches this then an additional vint is added.
+
+   The overview of the tag byte is therefore TTTSSSSS with T and S being type and size. */
+SV* read_string(void);
+SV* read_small_int(void);
+SV* read_small_long(void);
+SV* read_extern_string(void);
+
+SV *(*dispatch_shift[8])(void) = {
+    NULL,
+    read_string,
+    read_small_int,
+    read_small_long,
+    NULL,
+    NULL,
+    NULL,
+    read_extern_string,
+};
 
 // Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
 // http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
@@ -14,6 +73,15 @@ uint32_t variable_int(void) {
         result |= ((uint32_t)((tag = *(bytes++)) & 127)) << shift;
 
     return result;
+}
+
+uint32_t read_size(void) {
+    uint32_t size = tag & 31;
+
+    if ( size == 31 )
+        size += variable_int();
+
+    return size;
 }
 
 SV* read_undef(void) { return newSV(0); }
@@ -87,6 +155,26 @@ SV* read_date(void) {
     return newSVpv(date_str, 24);
 }
 
+SV* read_hash(void) {
+    HV *hash = newHV();
+
+    uint32_t i, size = variable_int();
+
+    for ( i = 0; i < size; i++ ) {
+        tag = *(bytes++);
+
+        SV *key = DISPATCH;
+
+        tag = *(bytes++);
+
+        SV *value = DISPATCH;
+
+        hv_store_ent(hash, key, value, 0);
+    }
+
+    return newRV_noinc((SV*) hash);
+}
+
 SV* read_byte_array(void) {
     AV *array = newAV();
     uint32_t i, size = variable_int();
@@ -98,14 +186,11 @@ SV* read_byte_array(void) {
 }
 
 SV* read_string(void) {
-    uint32_t length = tag & 31;
+    uint32_t size = read_size();
 
-    if ( length == 31 )
-        length += variable_int();
+    SV *string = newSVpv(bytes, size);
 
-    SV *string = newSVpv(bytes, length);
-
-    bytes += length;
+    bytes += size;
 
     SvUTF8_on(string);
 
@@ -135,37 +220,22 @@ SV* read_small_long(void) {
     return newSVuv(result);
 }
 
-SV *(*dispatch[14])(void) = {
-    read_undef,
-    read_bool_true,
-    read_bool_false,
-    read_byte,
-    read_short,
-    read_double,
-    read_int,
-    read_long,
-    read_float,
-    read_date,
-    NULL,
-    NULL,
-    NULL,
-    read_byte_array,
-};
+SV* read_extern_string(void) {
+    SV *string;
 
-/* These datatypes are matched by taking the tag byte, shifting it by 5 so to only read
-   the first 3 bits of the tag byte, giving it a range or 0-7 inclusive.
+    uint32_t size = read_size();
 
-   The remaining 5 bits can then be used to store the size of the datatype, e.g. how
-   many chars in a string, this therefore has a range of 0-31, if the size exceeds or
-   matches this then an additional vint is added.
+    if (size) {
+        string = cache[size - 1];
+    }
+    else {
+        tag = *(bytes++);
 
-   The overview of the tag byte is therefore TTTSSSSS with T and S being type and size. */
-SV *(*dispatch_shift[4])(void) = {
-    NULL,
-    read_string,
-    read_small_int,
-    read_small_long,
-};
+        cache[cache_pos++] = string = DISPATCH;
+    }
+
+    return string;
+}
 
 MODULE = JavaBin PACKAGE = JavaBin
 
@@ -180,5 +250,5 @@ SV *from_javabin(input)
 
         //fprintf(stderr, "type = %d or %d\n", tag >> 5, tag);
 
-        RETVAL = tag >> 5 ? dispatch_shift[tag >> 5]() : dispatch[tag]();
+        RETVAL = DISPATCH;
     OUTPUT: RETVAL

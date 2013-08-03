@@ -7,11 +7,9 @@ import org.apache.solr.common.util.JavaBinCodec;
 
 public class MakeData {
     public static void main(String[] args) {
-        JavaBinCodec jbc = new JavaBinCodec();
-
         try {
             for (byte b : new byte[]{-128, 0, 127} ) {
-                jbc.marshal(b, new FileOutputStream("data/byte-" + b));
+                new JavaBinCodec().marshal(b, new FileOutputStream("data/byte-" + b));
             }
 
             for (short s : new short[]{-32768,
@@ -19,7 +17,7 @@ public class MakeData {
                                         0,
                                         128,
                                         32767} ) {
-                jbc.marshal(s, new FileOutputStream("data/short-" + s));
+                new JavaBinCodec().marshal(s, new FileOutputStream("data/short-" + s));
             }
 
             for (int i : new int[]{-2147483648,
@@ -31,7 +29,7 @@ public class MakeData {
                                     32768,
                                     8388608,
                                     2147483647} ) {
-                jbc.marshal(i, new FileOutputStream("data/int-" + i));
+                new JavaBinCodec().marshal(i, new FileOutputStream("data/int-" + i));
             }
 
             for (long l : new long[]{-9223372036854775808L,
@@ -51,7 +49,7 @@ public class MakeData {
                                       140737488355328L,
                                       36028797018963968L,
                                       9223372036854775807L} ) {
-                jbc.marshal(l, new FileOutputStream("data/long-" + l));
+                new JavaBinCodec().marshal(l, new FileOutputStream("data/long-" + l));
             }
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -59,16 +57,26 @@ public class MakeData {
             sdf.setTimeZone(java.util.TimeZone.getTimeZone("Zulu"));
 
             for (String date : new String[]{"1969-07-20T20:17:40.000Z", "1989-06-07T13:33:33.337Z"} ) {
-                jbc.marshal(sdf.parse(date), new FileOutputStream("data/date-" + date));
+                new JavaBinCodec().marshal(sdf.parse(date), new FileOutputStream("data/date-" + date));
             }
 
-            jbc.marshal(new byte[]{-128, 0, 127}, new FileOutputStream("data/byte_array"));
+            new JavaBinCodec().marshal(new byte[]{-128, 0, 127}, new FileOutputStream("data/byte_array"));
 
             for (String str : new String[]{"", "Grüßen", "The quick brown fox jumped over the lazy dog"}) {
-                 jbc.marshal(str, new FileOutputStream("data/string-" + str));
+                 new JavaBinCodec().marshal(str, new FileOutputStream("data/string-" + str));
             }
 
-            jbc.marshal(new HashMap<String, Object>(){{
+            new JavaBinCodec().marshal(new HashMap(), new FileOutputStream("data/hash-{}"));
+            new JavaBinCodec().marshal(new HashMap<String, Object>(){{
+                put("foo", "bar");
+                put("baz", "qux");
+            }}, new FileOutputStream("data/hash-{ foo => 'bar', baz => 'qux' }"));
+            new JavaBinCodec().marshal(new HashMap<String, Object>(){{
+                put("foo", "bar");
+                put("bar", "foo");
+            }}, new FileOutputStream("data/hash-{ foo => 'bar', bar => 'foo' }"));
+
+            new JavaBinCodec().marshal(new HashMap<String, Object>(){{
                 put("array", new String[]{"foo", "bar", "baz", "qux"});
                 put("byte", (byte)127);
                 put("byte_array", new byte[]{-128, 0, 127});

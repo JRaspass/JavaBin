@@ -1,0 +1,10 @@
+#!/bin/sh
+
+VER=4.4.0
+SOLR=~/Downloads/solr-$VER
+
+export CLASSPATH=$SOLR/dist/solr-solrj-$VER.jar:$SOLR/dist/solrj-lib/*:.
+
+javac MakeData.java && java MakeData
+
+rm *.class

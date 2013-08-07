@@ -12,6 +12,11 @@ sub slurp($) { open my $fh, '<', @_ or die $!; local $/; <$fh> }
 
 chdir 't/data' or die $!;
 
+note 'no args';
+
+is from_javabin(), undef, 'scalar context';
+is_deeply [from_javabin()], [], 'array context';
+
 note 'constants';
 
 is from_javabin("\0\0"), undef, 'undef';

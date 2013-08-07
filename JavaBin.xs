@@ -239,16 +239,18 @@ SV* read_extern_string(void) {
 
 MODULE = JavaBin PACKAGE = JavaBin
 
-SV *from_javabin(input)
-    unsigned char *input
+SV *from_javabin(...)
     PROTOTYPE: DISABLE
-    CODE:
-        // Skip the version byte.
-        bytes = input + 1;
+    PPCODE:
+        if (!items) return;
+
+        // Set bytes, skip the version byte.
+        bytes = (uint8_t *) SvPV_nolen(ST(0)) + 1;
 
         tag = *(bytes++);
 
         //fprintf(stderr, "type = %d or %d\n", tag >> 5, tag);
 
-        RETVAL = DISPATCH;
-    OUTPUT: RETVAL
+        ST(0) = sv_2mortal(DISPATCH);
+
+        XSRETURN(1);

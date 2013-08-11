@@ -39,9 +39,11 @@ is from_javabin(slurp "int-$_"), $_, "int $_" for nsort map /int-(.*)/, <int-*>;
 note 'longs';
 
 SKIP: {
-    skip '64bit ints are unsupported on your platform.', 1 unless eval { pack 'q' };
+    my @longs = nsort map /long-(.*)/, <long-*>;
 
-    is from_javabin(slurp "long-$_"), $_, "long $_" for nsort map /long-(.*)/, <long-*>;
+    skip '64bit ints are unsupported on your platform.', ~~@longs unless eval { pack 'q' };
+
+    is from_javabin(slurp "long-$_"), $_, "long $_" for @longs;
 };
 
 note 'dates';

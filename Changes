@@ -1,6 +1,7 @@
 0.4 ???
     - Add millisecond precision to dates.
     - Reimplement in XS, now using EU::MM.
+    - Require Test::More 0.88 in order to have done_testing().
 
 0.3 2013-07-15
     - Work around 32bit issues in tests, again.

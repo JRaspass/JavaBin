@@ -4,7 +4,7 @@ use warnings;
 use charnames ':full';
 
 use JavaBin;
-use Test::More;
+use Test::More 0.88;
 
 binmode Test::More->builder->$_, ':utf8' for qw/failure_output output todo_output/;
 

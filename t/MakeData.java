@@ -66,7 +66,17 @@ public class MakeData {
             }
 
             // Byte arrays
-            new JavaBinCodec().marshal(new byte[]{-128, 0, 127}, new FileOutputStream("data/byte_array"));
+            new JavaBinCodec().marshal(new byte[]{}, new FileOutputStream("data/byte_array-[]"));
+
+            new JavaBinCodec().marshal(new byte[]{-128, 0, 127}, new FileOutputStream("data/byte_array-[qw(-128 0 127)]"));
+
+            // Iterators
+            new JavaBinCodec().marshal(Arrays.asList(new String[]{}).iterator(), new FileOutputStream("data/iterator-[]"));
+
+            new JavaBinCodec().marshal(
+                Arrays.asList(new String[]{"foo", "bar", "baz", "qux"}).iterator(),
+                new FileOutputStream("data/iterator-[qw(foo bar baz qux)]")
+            );
 
             // Arrays
             new JavaBinCodec().marshal(new String[]{}, new FileOutputStream("data/array-[]"));
@@ -77,7 +87,7 @@ public class MakeData {
             );
 
             // Strings
-            for (String str : new String[]{"", "Grüßen", "The quick brown fox jumped over the lazy dog"}) {
+            for (String str : new String[]{"", "Grüßen", "The quick brown fox jumped over the lazy dog", "☃"}) {
                  new JavaBinCodec().marshal(str, new FileOutputStream("data/string-" + str));
             }
 
@@ -100,11 +110,8 @@ public class MakeData {
                 put("byte", (byte)127);
                 put("byte_array", new byte[]{-128, 0, 127});
                 put("byte_neg", (byte)-128);
-                put("double", 1.797_693_134_862_31e308);
                 put("iterator", Arrays.asList(new String[]{"qux", "baz", "bar", "foo"}).iterator());
                 put("false", false);
-                put("float", 3.402_823_466_385_29e+38f);
-                put("shifted_sint", 2_147_483_647);
                 put("null", null);
                 put("pangram", "The quick brown fox jumped over the lazy dog");
                 put("short", (short)32_767);

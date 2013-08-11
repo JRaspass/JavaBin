@@ -21,8 +21,9 @@ SV* read_float(void);
 SV* read_date(void);
 SV* read_hash(void);
 SV* read_byte_array(void);
+SV* read_iterator(void);
 
-SV *(*dispatch[14])(void) = {
+SV *(*dispatch[15])(void) = {
     read_undef,
     read_bool_true,
     read_bool_false,
@@ -37,6 +38,7 @@ SV *(*dispatch[14])(void) = {
     NULL,
     NULL,
     read_byte_array,
+    read_iterator,
 };
 
 /* These datatypes are matched by taking the tag byte, shifting it by 5 so to only read
@@ -182,6 +184,16 @@ SV* read_byte_array(void) {
 
     for ( i = 0; i < size; i++ )
         av_store(array, i, newSViv((int8_t) *(bytes++)));
+
+    return newRV_noinc((SV*) array);
+}
+
+SV* read_iterator(void) {
+    AV *array = newAV();
+    uint32_t i;
+
+    while ( ( tag = *(bytes++) ) != 15 )
+        av_store(array, i++, DISPATCH);
 
     return newRV_noinc((SV*) array);
 }

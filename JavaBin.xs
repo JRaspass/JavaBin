@@ -190,7 +190,7 @@ SV* read_byte_array(void) {
 
 SV* read_iterator(void) {
     AV *array = newAV();
-    uint32_t i;
+    uint32_t i = 0;
 
     while ( ( tag = *(bytes++) ) != 15 )
         av_store(array, i++, DISPATCH);

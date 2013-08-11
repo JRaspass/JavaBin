@@ -6,9 +6,10 @@ use charnames ':full';
 use JavaBin;
 use Test::More 0.88;
 
-binmode Test::More->builder->$_, ':utf8' for qw/failure_output output todo_output/;
-
+sub nsort(@) { sort { $a <=> $b } @_ }
 sub slurp($) { open my $fh, '<', @_ or die $!; local $/; <$fh> }
+
+binmode Test::More->builder->$_, ':utf8' for qw/failure_output output todo_output/;
 
 chdir 't/data' or die $!;
 
@@ -25,22 +26,22 @@ is from_javabin("\0\2"), 0, 'false';
 
 note 'bytes';
 
-is from_javabin(slurp "byte-$_"), $_, "byte $_" for sort { $a <=> $b } map /byte-(.*)/, <byte-*>;
+is from_javabin(slurp "byte-$_"), $_, "byte $_" for nsort map /byte-(.*)/, <byte-*>;
 
 note 'shorts';
 
-is from_javabin(slurp "short-$_"), $_, "short $_" for sort { $a <=> $b } map /short-(.*)/, <short-*>;
+is from_javabin(slurp "short-$_"), $_, "short $_" for nsort map /short-(.*)/, <short-*>;
 
 note 'ints';
 
-is from_javabin(slurp "int-$_"), $_, "int $_" for sort { $a <=> $b } map /int-(.*)/, <int-*>;
+is from_javabin(slurp "int-$_"), $_, "int $_" for nsort map /int-(.*)/, <int-*>;
 
 note 'longs';
 
 SKIP: {
     skip '64bit ints are unsupported on your platform.', 1 unless eval { pack 'q' };
 
-    is from_javabin(slurp "long-$_"), $_, "long $_" for sort { $a <=> $b } map /long-(.*)/, <long-*>;
+    is from_javabin(slurp "long-$_"), $_, "long $_" for nsort map /long-(.*)/, <long-*>;
 };
 
 note 'dates';

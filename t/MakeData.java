@@ -87,12 +87,12 @@ public class MakeData {
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{
                 put("foo", "bar");
                 put("baz", "qux");
-            }}, new FileOutputStream("data/hash-{ foo => 'bar', baz => 'qux' }"));
+            }}, new FileOutputStream("data/hash-{qw(foo bar baz qux)}"));
 
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{
                 put("foo", "bar");
                 put("bar", "foo");
-            }}, new FileOutputStream("data/hash-{ foo => 'bar', bar => 'foo' }"));
+            }}, new FileOutputStream("data/hash-{qw(foo bar bar foo)}"));
 
             // All together now
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{

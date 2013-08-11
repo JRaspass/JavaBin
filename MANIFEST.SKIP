@@ -1,6 +1,6 @@
 ~$
 \.ini$
-^bench/
 ^MANIFEST\.SKIP$
 ^README\.md$
-^t/MakeData
+^t/MakeData\.java$
+^t/make-data$

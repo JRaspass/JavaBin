@@ -264,7 +264,7 @@ SV* read_extern_string(void) {
 
 MODULE = JavaBin PACKAGE = JavaBin
 
-SV *from_javabin(...)
+void from_javabin(...)
     PROTOTYPE: DISABLE
     PPCODE:
         if (!items) return;

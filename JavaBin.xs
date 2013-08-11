@@ -50,6 +50,7 @@ SV *(*dispatch[14])(void) = {
 SV* read_string(void);
 SV* read_small_int(void);
 SV* read_small_long(void);
+SV* read_array(void);
 SV* read_extern_string(void);
 
 SV *(*dispatch_shift[8])(void) = {
@@ -57,7 +58,7 @@ SV *(*dispatch_shift[8])(void) = {
     read_string,
     read_small_int,
     read_small_long,
-    NULL,
+    read_array,
     NULL,
     NULL,
     read_extern_string,
@@ -218,6 +219,18 @@ SV* read_small_long(void) {
     }
 
     return newSVuv(result);
+}
+
+SV* read_array(void) {
+    AV *array = newAV();
+    uint32_t i, size = read_size();
+
+    for ( i = 0; i < size; i++ ) {
+        tag = *(bytes++);
+        av_store(array, i, DISPATCH);
+    }
+
+    return newRV_noinc((SV*) array);
 }
 
 SV* read_extern_string(void) {

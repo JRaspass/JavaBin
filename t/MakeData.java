@@ -8,10 +8,12 @@ import org.apache.solr.common.util.JavaBinCodec;
 public class MakeData {
     public static void main(String[] args) {
         try {
+            // Bytes
             for (byte b : new byte[]{-128, 0, 127} ) {
                 new JavaBinCodec().marshal(b, new FileOutputStream("data/byte-" + b));
             }
 
+            // Shorts
             for (short s : new short[]{-32768,
                                        -129,
                                         0,
@@ -20,6 +22,7 @@ public class MakeData {
                 new JavaBinCodec().marshal(s, new FileOutputStream("data/short-" + s));
             }
 
+            // Ints
             for (int i : new int[]{-2147483648,
                                    -8388609,
                                    -32769,
@@ -32,6 +35,7 @@ public class MakeData {
                 new JavaBinCodec().marshal(i, new FileOutputStream("data/int-" + i));
             }
 
+            // Longs
             for (long l : new long[]{-9223372036854775808L,
                                      -36028797018963969L,
                                      -140737488355329L,
@@ -52,6 +56,7 @@ public class MakeData {
                 new JavaBinCodec().marshal(l, new FileOutputStream("data/long-" + l));
             }
 
+            // Dates
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
             sdf.setTimeZone(java.util.TimeZone.getTimeZone("Zulu"));
@@ -60,22 +65,36 @@ public class MakeData {
                 new JavaBinCodec().marshal(sdf.parse(date), new FileOutputStream("data/date-" + date));
             }
 
+            // Byte arrays
             new JavaBinCodec().marshal(new byte[]{-128, 0, 127}, new FileOutputStream("data/byte_array"));
 
+            // Arrays
+            new JavaBinCodec().marshal(new String[]{}, new FileOutputStream("data/array-[]"));
+
+            new JavaBinCodec().marshal(
+                new String[]{"foo", "bar", "baz", "qux"},
+                new FileOutputStream("data/array-[qw(foo bar baz qux)]")
+            );
+
+            // Strings
             for (String str : new String[]{"", "Grüßen", "The quick brown fox jumped over the lazy dog"}) {
                  new JavaBinCodec().marshal(str, new FileOutputStream("data/string-" + str));
             }
 
+            // Hashmaps
             new JavaBinCodec().marshal(new HashMap(), new FileOutputStream("data/hash-{}"));
+
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{
                 put("foo", "bar");
                 put("baz", "qux");
             }}, new FileOutputStream("data/hash-{ foo => 'bar', baz => 'qux' }"));
+
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{
                 put("foo", "bar");
                 put("bar", "foo");
             }}, new FileOutputStream("data/hash-{ foo => 'bar', bar => 'foo' }"));
 
+            // All together now
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{
                 put("array", new String[]{"foo", "bar", "baz", "qux"});
                 put("byte", (byte)127);

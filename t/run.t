@@ -66,6 +66,10 @@ for ( sort map /string-(.*)/, <string-*> ) {
     is from_javabin(slurp "string-$_"), $_, qq/string "$_"/;
 }
 
+note 'arrays';
+
+is_deeply from_javabin(slurp "array-$_"), eval, "array $_" for sort map /array-(.*)/, <array-*>;
+
 #note 'all';
 
 #is_deeply from_javabin(slurp 'all'), {

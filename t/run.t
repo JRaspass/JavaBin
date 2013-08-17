@@ -1,40 +1,60 @@
 use strict;
 use warnings;
 
+use B 'svref_2object';
 use JavaBin;
-use Test::More 0.88;
+use Test::More 0.96;
 
+sub bnote($) { note "\r\x1b[1m@_\x1b[0m" }
 sub nsort(@) { sort { $a <=> $b } @_ }
 sub slurp($) { open my $fh, '<', @_ or die $!; local $/; <$fh> }
+
+sub test_ref(@) {
+    my ( $type, @values ) = @_;
+
+    my $plural = "${type}s";
+
+    bnote join(' ', split /_/, $type) . 's';
+
+    for (@values) {
+        my $ref = from_javabin slurp "${type}-$_";
+
+        subtest $_, sub {
+            is_deeply $ref, eval "+$_", 'value matches';
+
+            is svref_2object($ref)->REFCNT, 1, 'reference count is 1';
+        };
+    }
+}
 
 binmode Test::More->builder->$_, ':utf8' for qw/failure_output output todo_output/;
 
 chdir 't/data' or die $!;
 
-note 'no args';
+bnote 'no args';
 
 is from_javabin(), undef, 'scalar context';
 is_deeply [from_javabin()], [], 'array context';
 
-note 'constants';
+bnote 'constants';
 
 is from_javabin("\0\0"), undef, 'undef';
 is from_javabin("\0\1"), 1, 'true';
 is from_javabin("\0\2"), 0, 'false';
 
-note 'bytes';
+bnote 'bytes';
 
 is from_javabin(slurp "byte-$_"), $_, "byte $_" for nsort map /-(.*)/, <byte-*>;
 
-note 'shorts';
+bnote 'shorts';
 
 is from_javabin(slurp "short-$_"), $_, "short $_" for nsort map /-(.*)/, <short-*>;
 
-note 'ints';
+bnote 'ints';
 
 is from_javabin(slurp "int-$_"), $_, "int $_" for nsort map /-(.*)/, <int-*>;
 
-note 'longs';
+bnote 'longs';
 
 SKIP: {
     my @longs = nsort map /-(.*)/, <long-*>;
@@ -44,23 +64,11 @@ SKIP: {
     is from_javabin(slurp "long-$_"), $_, "long $_" for @longs;
 };
 
-note 'dates';
+bnote 'dates';
 
 is from_javabin(slurp "date-$_"), $_, "date $_" for sort map /-(.*)/, <date-*>;
 
-note 'hashes';
-
-is_deeply from_javabin(slurp "hash-$_"), eval "+$_", "hash $_" for reverse sort map /-(.*)/, <hash-*>;
-
-note 'byte arrays';
-
-is_deeply from_javabin(slurp "byte_array-$_"), eval, "byte array $_" for sort map /-(.*)/, <byte_array-*>;
-
-note 'iterators';
-
-is_deeply from_javabin(slurp "iterator-$_"), eval, "iterator $_" for sort map /-(.*)/, <iterator-*>;
-
-note 'strings';
+bnote 'strings';
 
 for ( sort map /-(.*)/, <string-*> ) {
     utf8::decode $_;
@@ -68,11 +76,12 @@ for ( sort map /-(.*)/, <string-*> ) {
     is from_javabin(slurp "string-$_"), $_, qq/string "$_"/;
 }
 
-note 'arrays';
+test_ref array      =>         sort map /-(.*)/, <array-*>;
+test_ref byte_array =>         sort map /-(.*)/, <byte_array-*>;
+test_ref iterator   =>         sort map /-(.*)/, <iterator-*>;
+test_ref hash_map   => reverse sort map /-(.*)/, <hash_map-*>;
 
-is_deeply from_javabin(slurp "array-$_"), eval, "array $_" for sort map /-(.*)/, <array-*>;
-
-note 'all';
+bnote 'all';
 
 is_deeply from_javabin(slurp 'all'), {
     array        => [qw/foo bar baz qux/],

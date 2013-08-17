@@ -91,18 +91,18 @@ public class MakeData {
                  new JavaBinCodec().marshal(str, new FileOutputStream("data/string-" + str));
             }
 
-            // Hashmaps
-            new JavaBinCodec().marshal(new HashMap(), new FileOutputStream("data/hash-{}"));
+            // Hash maps
+            new JavaBinCodec().marshal(new HashMap(), new FileOutputStream("data/hash_map-{}"));
 
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{
                 put("foo", "bar");
                 put("baz", "qux");
-            }}, new FileOutputStream("data/hash-{qw(foo bar baz qux)}"));
+            }}, new FileOutputStream("data/hash_map-{qw(foo bar baz qux)}"));
 
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{
                 put("foo", "bar");
                 put("bar", "foo");
-            }}, new FileOutputStream("data/hash-{qw(foo bar bar foo)}"));
+            }}, new FileOutputStream("data/hash_map-{qw(foo bar bar foo)}"));
 
             // All together now
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{

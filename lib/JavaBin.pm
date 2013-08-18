@@ -37,25 +37,58 @@ Returns a scalar representation of the data, be that undef, number, string, or r
 
 This function does no error checking, hand it invalid JavaBin and it will probably die.
 
-=head1 CAVEATS
+=head1 DATA TYPE MAPPING
 
-To (de)serialize long floats and ints this package requires a 64bit Perl.
-That said, it won't actually throw unless it encounters such data, and therefore
-the tests for such data are skipped on 32bit platforms.
+Java data types are mapped to Perl ones as follows.
 
-Technically this limitation could be worked around by use of L<bigint> or such.
-But the added complexity and maintanace cost would outweight the benifit.
+=head2 null
 
-Due to the differences between Java and Perl not all data structures can be mapped one-to-one.
+A null is returned as L<undef>.
 
-An example of such mapping is a Java interator whcih becomes a Perl array during deserialization.
-Additionally a Java HashMap, Named List, or Ordered Map will become a Perl hash.
+=head2 Booleans
+
+True and false are returned as 1 and 0 respectively.
+
+=head2 Byte, short, double, int, and long.
+
+Integers of all size are returned as scalars, with the requirement of a 64bit Perl for longs.
+
+=head2 Float
+
+A float is returned as a scalar, with the requirement of a 64bit Perl for large values.
+
+=head2 Date
+
+A date is returned as a string in ISO 8601 format. This may change to be a Date object like L<DateTime> in future.
+
+=head2 Map
+
+A map is returned as a hash.
+
+=head2 Iterator
+
+An iterator is flattened into an array.
+
+=head2 String
+
+All strings are returned as strings with the UTF-8 flag on.
+
+=head2 Array
+
+An array is returned as an array.
+
+=head2 SimpleOrderedMap
+
+A SimpleOrderedMap is returned as an array. This will likely change to be a tied hash like L<Tie::IxHash> in future.
+
+=head2 NamedList
+
+A NamedList is returned as an array. This will likely change to be a tied hash or object in future.
 
 =head1 TODO
 
 =for :list
 * C<to_javabin> serializer.
-* XS implementation.
 
 =head1 INSPIRATION
 

@@ -1,5 +1,6 @@
 0.4 ???
     - Add millisecond precision to dates.
+    - Clarify to which Perl data types the Java ones are mapped.
     - Reimplement in XS, now using EU::MM.
     - Require Test::More 0.96 to have subtest() with implicit done_testing().
 

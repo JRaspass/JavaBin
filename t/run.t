@@ -76,10 +76,12 @@ for ( sort map /-(.*)/, <string-*> ) {
     is from_javabin(slurp "string-$_"), $_, qq/string "$_"/;
 }
 
-test_ref array      =>         sort map /-(.*)/, <array-*>;
-test_ref byte_array =>         sort map /-(.*)/, <byte_array-*>;
-test_ref iterator   =>         sort map /-(.*)/, <iterator-*>;
-test_ref hash_map   => reverse sort map /-(.*)/, <hash_map-*>;
+test_ref array              =>         sort map /-(.*)/, <array-*>;
+test_ref byte_array         =>         sort map /-(.*)/, <byte_array-*>;
+test_ref iterator           =>         sort map /-(.*)/, <iterator-*>;
+test_ref map                => reverse sort map /-(.*)/, <map-*>;
+test_ref simple_ordered_map =>         sort map /-(.*)/, <simple_ordered_map-*>;
+test_ref named_list         =>         sort map /-(.*)/, <named_list-*>;
 
 bnote 'all';
 

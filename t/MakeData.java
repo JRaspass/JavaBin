@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class MakeData {
     public static void main(String[] args) {
@@ -91,18 +93,29 @@ public class MakeData {
                  new JavaBinCodec().marshal(str, new FileOutputStream("data/string-" + str));
             }
 
-            // Hash maps
-            new JavaBinCodec().marshal(new HashMap(), new FileOutputStream("data/hash_map-{}"));
+            // Maps
+            new JavaBinCodec().marshal(new HashMap(), new FileOutputStream("data/map-{}"));
 
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{
                 put("foo", "bar");
                 put("baz", "qux");
-            }}, new FileOutputStream("data/hash_map-{qw(foo bar baz qux)}"));
+            }}, new FileOutputStream("data/map-{qw(foo bar baz qux)}"));
 
-            new JavaBinCodec().marshal(new HashMap<String, Object>(){{
-                put("foo", "bar");
-                put("bar", "foo");
-            }}, new FileOutputStream("data/hash_map-{qw(foo bar bar foo)}"));
+            // SimpleOrderedMaps
+            new JavaBinCodec().marshal(new SimpleOrderedMap(), new FileOutputStream("data/simple_ordered_map-[]"));
+
+            new JavaBinCodec().marshal(new SimpleOrderedMap(){{
+                add("foo", "bar");
+                add("baz", "qux");
+            }}, new FileOutputStream("data/simple_ordered_map-[qw(foo bar baz qux)]"));
+
+            // NamedLists
+            new JavaBinCodec().marshal(new NamedList(), new FileOutputStream("data/named_list-[]"));
+
+            new JavaBinCodec().marshal(new NamedList(){{
+                add("foo", "bar");
+                add("baz", "qux");
+            }}, new FileOutputStream("data/named_list-[qw(foo bar baz qux)]"));
 
             // All together now
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{

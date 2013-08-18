@@ -19,7 +19,7 @@ SV* read_int(void);
 SV* read_long(void);
 SV* read_float(void);
 SV* read_date(void);
-SV* read_hash(void);
+SV* read_map(void);
 SV* read_byte_array(void);
 SV* read_iterator(void);
 
@@ -34,7 +34,7 @@ SV *(*dispatch[15])(void) = {
     read_long,
     read_float,
     read_date,
-    read_hash,
+    read_map,
     NULL,
     NULL,
     read_byte_array,
@@ -53,6 +53,8 @@ SV* read_string(void);
 SV* read_small_int(void);
 SV* read_small_long(void);
 SV* read_array(void);
+SV* read_simple_ordered_map(void);
+SV* read_named_list(void);
 SV* read_extern_string(void);
 
 SV *(*dispatch_shift[8])(void) = {
@@ -61,8 +63,8 @@ SV *(*dispatch_shift[8])(void) = {
     read_small_int,
     read_small_long,
     read_array,
-    NULL,
-    NULL,
+    read_simple_ordered_map,
+    read_named_list,
     read_extern_string,
 };
 
@@ -158,7 +160,7 @@ SV* read_date(void) {
     return newSVpv(date_str, 24);
 }
 
-SV* read_hash(void) {
+SV* read_map(void) {
     HV *hash = newHV();
 
     uint32_t i, size = variable_int();
@@ -235,7 +237,34 @@ SV* read_small_long(void) {
 
 SV* read_array(void) {
     AV *array = newAV();
+
     uint32_t i, size = read_size();
+
+    for ( i = 0; i < size; i++ ) {
+        tag = *(bytes++);
+        av_store(array, i, DISPATCH);
+    }
+
+    return newRV_noinc((SV*) array);
+}
+
+SV* read_simple_ordered_map(void) {
+    AV *array = newAV();
+
+    uint32_t i, size = read_size() << 1;
+
+    for ( i = 0; i < size; i++ ) {
+        tag = *(bytes++);
+        av_store(array, i, DISPATCH);
+    }
+
+    return newRV_noinc((SV*) array);
+}
+
+SV* read_named_list(void) {
+    AV *array = newAV();
+
+    uint32_t i, size = read_size() << 1;
 
     for ( i = 0; i < size; i++ ) {
         tag = *(bytes++);

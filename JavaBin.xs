@@ -103,7 +103,20 @@ SV* read_short(void) {
     return newSViv( (int16_t) ( ( *(bytes - 2) << 8 ) | *(bytes - 1) ) );
 }
 
-SV* read_double(void) { return newSVuv(0); }
+SV* read_double(void) {
+    uint64_t i = ( ( (uint64_t) *bytes << 56 ) |
+                   ( (uint64_t) *(bytes + 1) << 48 ) |
+                   ( (uint64_t) *(bytes + 2) << 40 ) |
+                   ( (uint64_t) *(bytes + 3) << 32 ) |
+                   ( (uint64_t) *(bytes + 4) << 24 ) |
+                   ( (uint64_t) *(bytes + 5) << 16 ) |
+                   ( (uint64_t) *(bytes + 6) << 8  ) |
+                   ( (uint64_t) *(bytes + 7) ) );
+
+    bytes += 8;
+
+    return newSVnv(*(double*)&i);
+}
 
 SV* read_int(void) {
     // This is from network (big) endian to intel (little) endian.
@@ -129,7 +142,24 @@ SV* read_long(void) {
                                 ( (uint64_t) *(bytes - 1) ) ) );
 }
 
-SV* read_float(void) { return newSVuv(0); }
+// JavaBin has a 4byte float format, decimal values in Perl are always doubles,
+// therefore a little magic is required. Read the 4 bytes into an int in the
+// correct endian order. Re-read these bits as a float, stringify this float,
+// then finally numify the string into a double.
+SV* read_float(void) {
+    uint32_t i = ( ( *bytes       << 24 ) |
+                   ( *(bytes + 1) << 16 ) |
+                   ( *(bytes + 2) << 8  ) |
+                   ( *(bytes + 3) ) );
+
+    bytes += 4;
+
+    char buffer[47];
+
+    sprintf(buffer, "%f", *(float*)&i);
+
+    return newSVnv(strtod(buffer, NULL));
+}
 
 SV* read_date(void) {
     int64_t date_ms = ( ( (uint64_t) *bytes       << 56 ) |

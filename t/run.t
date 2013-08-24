@@ -64,6 +64,14 @@ SKIP: {
     is from_javabin(slurp "long-$_"), $_, "long $_" for @longs;
 };
 
+bnote 'floats';
+
+is from_javabin(slurp "float-$_"), $_, "float $_" for sort map /-(.*)/, <float-*>;
+
+bnote 'doubles';
+
+is from_javabin(slurp "double-$_"), $_, "double $_" for sort map /-(.*)/, <double-*>;
+
 bnote 'dates';
 
 is from_javabin(slurp "date-$_"), $_, "date $_" for sort map /-(.*)/, <date-*>;

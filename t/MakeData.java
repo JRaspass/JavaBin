@@ -58,6 +58,12 @@ public class MakeData {
                 new JavaBinCodec().marshal(l, new FileOutputStream("data/long-" + l));
             }
 
+            // Floats
+            new JavaBinCodec().marshal(3.14159f, new FileOutputStream("data/float-3.14159"));
+
+            // Doubles
+            new JavaBinCodec().marshal(3.14159265358979, new FileOutputStream("data/double-3.14159265358979"));
+
             // Dates
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 

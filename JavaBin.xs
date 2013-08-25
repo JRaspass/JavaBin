@@ -89,7 +89,7 @@ uint32_t read_size(void) {
     return size;
 }
 
-SV* read_undef(void) { return newSV(0); }
+SV* read_undef(void) { return &PL_sv_undef; }
 
 SV* read_bool_true(void) { return newSVuv(1); }
 

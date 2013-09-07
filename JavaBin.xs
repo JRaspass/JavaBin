@@ -305,9 +305,8 @@ SV* read_extern_string(void) {
 
     uint32_t size = read_size();
 
-    if (size) {
+    if (size)
         string = cache[size - 1];
-    }
     else {
         tag = *(bytes++);
 

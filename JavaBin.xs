@@ -233,11 +233,9 @@ SV* read_iterator(void) {
 SV* read_string(void) {
     uint32_t size = read_size();
 
-    SV *string = newSVpv(bytes, size);
+    SV *string = newSVpvn_flags(bytes, size, SVf_UTF8);
 
     bytes += size;
-
-    SvUTF8_on(string);
 
     return string;
 }

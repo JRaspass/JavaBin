@@ -202,9 +202,7 @@ SV* read_map(void) {
 
         tag = *(bytes++);
 
-        SV *value = DISPATCH;
-
-        hv_store_ent(hash, key, value, 0);
+        hv_store_ent(hash, key, DISPATCH, 0);
     }
 
     return newRV_noinc((SV*) hash);

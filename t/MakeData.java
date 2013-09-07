@@ -69,7 +69,10 @@ public class MakeData {
 
             sdf.setTimeZone(java.util.TimeZone.getTimeZone("Zulu"));
 
-            for (String date : new String[]{"1969-07-20T20:17:40.000Z", "1989-06-07T13:33:33.337Z"} ) {
+            for (String date : new String[]{"1969-07-20T20:17:40.000Z",
+                                            "1970-01-01T00:00:00.000Z",
+                                            "1989-06-07T13:33:33.337Z",
+                                            "2038-01-19T03:14:07.000Z"} ) {
                 new JavaBinCodec().marshal(sdf.parse(date), new FileOutputStream("data/date-" + date));
             }
 

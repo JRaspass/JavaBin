@@ -3,10 +3,8 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.*;
+import org.apache.solr.common.util.*;
 
 public class MakeData {
     public static void main(String[] args) {
@@ -77,6 +75,14 @@ public class MakeData {
                 new JavaBinCodec().marshal(sdf.parse(date), new FileOutputStream("data/date-" + date));
             }
 
+            // SolrDocument
+            new JavaBinCodec().marshal(new SolrDocument(), new FileOutputStream("data/solr_document-{}"));
+
+            new JavaBinCodec().marshal(new SolrDocument(){{
+                addField("foo", "bar");
+                addField("baz", "qux");
+            }}, new FileOutputStream("data/solr_document-{qw(foo bar baz qux)}"));
+
             // SolrDocumentList
             new JavaBinCodec().marshal(
                 new SolrDocumentList(),
@@ -90,6 +96,21 @@ public class MakeData {
                     setStart(3);
                 }},
                 new FileOutputStream("data/solr_document_list-{ docs => [], maxScore => 0.1, numFound => 2, start => 3 }")
+            );
+
+            new JavaBinCodec().marshal(
+                new SolrDocumentList(){{
+                    add(new SolrDocument(){{
+                        addField("foo", "bar");
+                        addField("baz", "qux");
+                    }});
+                    setMaxScore(0.1f);
+                    setNumFound(2);
+                    setStart(3);
+                }},
+                new FileOutputStream(
+                    "data/solr_document_list-{ docs => [{qw(foo bar baz qux)}], maxScore => 0.1, numFound => 2, start => 3 }"
+                )
             );
 
             // Byte arrays

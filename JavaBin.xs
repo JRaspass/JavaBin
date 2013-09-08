@@ -213,7 +213,8 @@ SV* read_map(void) {
 SV* read_solr_doc(void) {
     tag = *(bytes++);
 
-    return DISPATCH;
+    // Assume the doc is implemented as a simple ordered map.
+    return read_simple_ordered_map();
 }
 
 SV* read_solr_doc_list(void) {
@@ -222,17 +223,21 @@ SV* read_solr_doc_list(void) {
     // Assume values are in an array, skip tag & DISPATCH.
     bytes++;
 
+    // Assume numFound is a small long.
     tag = *(bytes++);
-    hv_store(hash, "numFound", 8, DISPATCH, 0);
+    hv_store(hash, "numFound", 8, read_small_long(), 0);
 
+    // Assume start is a small long.
     tag = *(bytes++);
-    hv_store(hash, "start", 5, DISPATCH, 0);
+    hv_store(hash, "start", 5, read_small_long(), 0);
 
+    // Assume maxScore is either a float or undef.
     tag = *(bytes++);
-    hv_store(hash, "maxScore", 8, DISPATCH, 0);
+    hv_store(hash, "maxScore", 8, tag ? read_float() : &PL_sv_undef, 0);
 
+    // Assume docs are an array.
     tag = *(bytes++);
-    hv_store(hash, "docs", 4, DISPATCH, 0);
+    hv_store(hash, "docs", 4, read_array(), 0);
 
     return newRV_noinc((SV*) hash);
 }

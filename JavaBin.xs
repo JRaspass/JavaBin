@@ -226,7 +226,7 @@ SV* read_solr_doc_list(void) {
     hv_store(hash, "numFound", 8, DISPATCH, 0);
 
     tag = *(bytes++);
-    hv_store(hash, "start"   , 5, DISPATCH, 0);
+    hv_store(hash, "start", 5, DISPATCH, 0);
 
     tag = *(bytes++);
     hv_store(hash, "maxScore", 8, DISPATCH, 0);

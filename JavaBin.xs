@@ -219,16 +219,19 @@ SV* read_solr_doc(void) {
 SV* read_solr_doc_list(void) {
     HV *hash = newHV();
 
-    tag = *(bytes++);
-
-    AV *array = SvRV(DISPATCH);
-
-    hv_store(hash, "numFound", 8, *av_fetch(array, 0, 0), 0);
-    hv_store(hash, "start"   , 5, *av_fetch(array, 1, 0), 0);
-    hv_store(hash, "maxScore", 8, *av_fetch(array, 2, 0), 0);
+    // Assume values are in an array, skip tag & DISPATCH.
+    bytes++;
 
     tag = *(bytes++);
+    hv_store(hash, "numFound", 8, DISPATCH, 0);
 
+    tag = *(bytes++);
+    hv_store(hash, "start"   , 5, DISPATCH, 0);
+
+    tag = *(bytes++);
+    hv_store(hash, "maxScore", 8, DISPATCH, 0);
+
+    tag = *(bytes++);
     hv_store(hash, "docs", 4, DISPATCH, 0);
 
     return newRV_noinc((SV*) hash);

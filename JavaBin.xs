@@ -20,6 +20,8 @@ SV* read_long(void);
 SV* read_float(void);
 SV* read_date(void);
 SV* read_map(void);
+SV* read_solr_doc(void);
+SV* read_solr_doc_list(void);
 SV* read_byte_array(void);
 SV* read_iterator(void);
 
@@ -35,8 +37,8 @@ SV *(*dispatch[15])(void) = {
     read_float,
     read_date,
     read_map,
-    NULL,
-    NULL,
+    read_solr_doc,
+    read_solr_doc_list,
     read_byte_array,
     read_iterator,
 };
@@ -208,6 +210,30 @@ SV* read_map(void) {
     return newRV_noinc((SV*) hash);
 }
 
+SV* read_solr_doc(void) {
+    tag = *(bytes++);
+
+    return DISPATCH;
+}
+
+SV* read_solr_doc_list(void) {
+    HV *hash = newHV();
+
+    tag = *(bytes++);
+
+    AV *array = SvRV(DISPATCH);
+
+    hv_store(hash, "numFound", 8, *av_fetch(array, 0, 0), 0);
+    hv_store(hash, "start"   , 5, *av_fetch(array, 1, 0), 0);
+    hv_store(hash, "maxScore", 8, *av_fetch(array, 2, 0), 0);
+
+    tag = *(bytes++);
+
+    hv_store(hash, "docs", 4, DISPATCH, 0);
+
+    return newRV_noinc((SV*) hash);
+}
+
 SV* read_byte_array(void) {
     AV *array = newAV();
     uint32_t i, size = variable_int();
@@ -268,6 +294,7 @@ SV* read_array(void) {
 
     for ( i = 0; i < size; i++ ) {
         tag = *(bytes++);
+
         av_store(array, i, DISPATCH);
     }
 
@@ -275,16 +302,21 @@ SV* read_array(void) {
 }
 
 SV* read_simple_ordered_map(void) {
-    AV *array = newAV();
+    HV *hash = newHV();
 
     uint32_t i, size = read_size() << 1;
 
-    for ( i = 0; i < size; i++ ) {
+    for ( i = 0; i < size; i += 2 ) {
         tag = *(bytes++);
-        av_store(array, i, DISPATCH);
+
+        SV *key = DISPATCH;
+
+        tag = *(bytes++);
+
+        hv_store_ent(hash, key, DISPATCH, 0);
     }
 
-    return newRV_noinc((SV*) array);
+    return newRV_noinc((SV*) hash);
 }
 
 SV* read_named_list(void) {

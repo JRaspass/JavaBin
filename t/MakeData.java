@@ -6,6 +6,7 @@ import java.util.HashMap;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.SolrDocumentList;
 
 public class MakeData {
     public static void main(String[] args) {
@@ -76,6 +77,21 @@ public class MakeData {
                 new JavaBinCodec().marshal(sdf.parse(date), new FileOutputStream("data/date-" + date));
             }
 
+            // SolrDocumentList
+            new JavaBinCodec().marshal(
+                new SolrDocumentList(),
+                new FileOutputStream("data/solr_document_list-{ docs => [], maxScore => undef, numFound => 0, start => 0 }")
+            );
+
+            new JavaBinCodec().marshal(
+                new SolrDocumentList(){{
+                    setMaxScore(0.1f);
+                    setNumFound(2);
+                    setStart(3);
+                }},
+                new FileOutputStream("data/solr_document_list-{ docs => [], maxScore => 0.1, numFound => 2, start => 3 }")
+            );
+
             // Byte arrays
             new JavaBinCodec().marshal(new byte[]{}, new FileOutputStream("data/byte_array-[]"));
 
@@ -111,12 +127,12 @@ public class MakeData {
             }}, new FileOutputStream("data/map-{qw(foo bar baz qux)}"));
 
             // SimpleOrderedMaps
-            new JavaBinCodec().marshal(new SimpleOrderedMap(), new FileOutputStream("data/simple_ordered_map-[]"));
+            new JavaBinCodec().marshal(new SimpleOrderedMap(), new FileOutputStream("data/simple_ordered_map-{}"));
 
             new JavaBinCodec().marshal(new SimpleOrderedMap(){{
                 add("foo", "bar");
                 add("baz", "qux");
-            }}, new FileOutputStream("data/simple_ordered_map-[qw(foo bar baz qux)]"));
+            }}, new FileOutputStream("data/simple_ordered_map-{qw(foo bar baz qux)}"));
 
             // NamedLists
             new JavaBinCodec().marshal(new NamedList(), new FileOutputStream("data/named_list-[]"));

@@ -4,10 +4,9 @@
 
 #define DISPATCH tag >> 5 ? dispatch_shift[tag >> 5]() : dispatch[tag]()
 
-uint8_t *bytes, cache_pos, tag;
-
-// FIXME cache should dynamically size.
-SV *cache[100];
+// TODO non fixed cache size?
+uint8_t *bytes, *cache_keys[100], cache_pos, tag;
+int32_t cache_sizes[100];
 
 SV* read_undef(void);
 SV* read_bool_true(void);
@@ -24,6 +23,10 @@ SV* read_solr_doc(void);
 SV* read_solr_doc_list(void);
 SV* read_byte_array(void);
 SV* read_iterator(void);
+SV* read_string(void);
+SV* read_small_int(void);
+SV* read_small_long(void);
+SV* read_array(void);
 
 SV *(*dispatch[15])(void) = {
     read_undef,
@@ -51,23 +54,14 @@ SV *(*dispatch[15])(void) = {
    matches this then an additional vint is added.
 
    The overview of the tag byte is therefore TTTSSSSS with T and S being type and size. */
-SV* read_string(void);
-SV* read_small_int(void);
-SV* read_small_long(void);
-SV* read_array(void);
-SV* read_simple_ordered_map(void);
-SV* read_named_list(void);
-SV* read_extern_string(void);
-
-SV *(*dispatch_shift[8])(void) = {
+SV *(*dispatch_shift[7])(void) = {
     NULL,
     read_string,
     read_small_int,
     read_small_long,
     read_array,
-    read_simple_ordered_map,
-    read_named_list,
-    read_extern_string,
+    read_map,
+    read_map,
 };
 
 // Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
@@ -195,16 +189,31 @@ SV* read_date(void) {
 SV* read_map(void) {
     HV *hash = newHV();
 
-    uint32_t i, size = variable_int();
+    uint32_t i, key_size, size = tag >> 5 ? read_size() : variable_int();
 
     for ( i = 0; i < size; i++ ) {
-        tag = *(bytes++);
-
-        SV *key = DISPATCH;
+        uint8_t *key;
 
         tag = *(bytes++);
 
-        hv_store_ent(hash, key, DISPATCH, 0);
+        if ( key_size = read_size() ) {
+            key = cache_keys[key_size];
+
+            key_size = cache_sizes[key_size];
+        }
+        else {
+            tag = *(bytes++);
+
+            cache_sizes[++cache_pos] = key_size = read_size();
+
+            cache_keys[cache_pos] = key = bytes;
+
+            bytes += key_size;
+        }
+
+        tag = *(bytes++);
+
+        hv_store(hash, key, key_size, DISPATCH, 0);
     }
 
     return newRV_noinc((SV*) hash);
@@ -214,7 +223,7 @@ SV* read_solr_doc(void) {
     tag = *(bytes++);
 
     // Assume the doc is implemented as a simple ordered map.
-    return read_simple_ordered_map();
+    return read_map();
 }
 
 SV* read_solr_doc_list(void) {
@@ -309,59 +318,16 @@ SV* read_array(void) {
     return newRV_noinc((SV*) array);
 }
 
-SV* read_simple_ordered_map(void) {
-    HV *hash = newHV();
-
-    uint32_t i, size = read_size() << 1;
-
-    for ( i = 0; i < size; i += 2 ) {
-        tag = *(bytes++);
-
-        SV *key = DISPATCH;
-
-        tag = *(bytes++);
-
-        hv_store_ent(hash, key, DISPATCH, 0);
-    }
-
-    return newRV_noinc((SV*) hash);
-}
-
-SV* read_named_list(void) {
-    AV *array = newAV();
-
-    uint32_t i, size = read_size() << 1;
-
-    for ( i = 0; i < size; i++ ) {
-        tag = *(bytes++);
-        av_store(array, i, DISPATCH);
-    }
-
-    return newRV_noinc((SV*) array);
-}
-
-SV* read_extern_string(void) {
-    SV *string;
-
-    uint32_t size = read_size();
-
-    if (size)
-        string = cache[size - 1];
-    else {
-        tag = *(bytes++);
-
-        cache[cache_pos++] = string = DISPATCH;
-    }
-
-    return string;
-}
-
 MODULE = JavaBin PACKAGE = JavaBin
 
 void from_javabin(...)
     PROTOTYPE: DISABLE
     PPCODE:
         if (!items) return;
+
+        // Zero the cache.
+        // TODO zero more than just the cache index?
+        cache_pos = 0;
 
         // Set bytes, skip the version byte.
         bytes = (uint8_t *) SvPV_nolen(ST(0)) + 1;

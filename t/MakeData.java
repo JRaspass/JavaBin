@@ -156,12 +156,20 @@ public class MakeData {
             }}, new FileOutputStream("data/simple_ordered_map-{qw(foo bar baz qux)}"));
 
             // NamedLists
-            new JavaBinCodec().marshal(new NamedList(), new FileOutputStream("data/named_list-[]"));
+            new JavaBinCodec().marshal(new NamedList(), new FileOutputStream("data/named_list-{}"));
 
             new JavaBinCodec().marshal(new NamedList(){{
                 add("foo", "bar");
                 add("baz", "qux");
-            }}, new FileOutputStream("data/named_list-[qw(foo bar baz qux)]"));
+            }}, new FileOutputStream("data/named_list-{qw(foo bar baz qux)}"));
+
+            // String caching
+            new JavaBinCodec().marshal(
+                new HashMap[]{
+                    new HashMap<String, String>(){{ put("foo", "bar");}},
+                    new HashMap<String, String>(){{ put("foo", "bar");}}
+                }, new FileOutputStream("data/string_caching-[{qw(foo bar)},{qw(foo bar)}]")
+            );
 
             // All together now
             new JavaBinCodec().marshal(new HashMap<String, Object>(){{

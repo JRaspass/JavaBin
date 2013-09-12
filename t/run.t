@@ -92,6 +92,7 @@ test_ref simple_ordered_map =>         sort map /-(.*)/, <simple_ordered_map-*>;
 test_ref named_list         =>         sort map /-(.*)/, <named_list-*>;
 test_ref solr_document      => reverse sort map /-(.*)/, <solr_document-*>;
 test_ref solr_document_list =>         sort map /-(.*)/, <solr_document_list-*>;
+test_ref string_caching     =>         sort map /-(.*)/, <string_caching-*>;
 
 bnote 'all';
 

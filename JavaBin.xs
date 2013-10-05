@@ -245,7 +245,7 @@ SV* read_solr_doc_list(pTHX) {
     tag = *(bytes++);
     Perl_hv_common(aTHX_ hash, NULL, STR_WITH_LEN("maxScore"), 0, HV_FETCH_ISSTORE, tag ? read_float(aTHX) : &PL_sv_undef, 0);
 
-    // Assume docs are an array.PERL_NO_SHORT_NAMES
+    // Assume docs are an array.
     tag = *(bytes++);
     Perl_hv_common(aTHX_ hash, NULL, STR_WITH_LEN("docs"), 0, HV_FETCH_ISSTORE, read_array(aTHX), 0);
 

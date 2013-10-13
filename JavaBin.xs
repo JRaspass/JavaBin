@@ -330,7 +330,7 @@ SV* read_array(pTHX) {
 }
 
 MODULE = JavaBin PACKAGE = JavaBin
-PROTOTYPES: DISABLE
+VERSIONCHECK: DISABLE
 
 void true()
 PPCODE:
@@ -365,7 +365,6 @@ PPCODE:
 
 MODULE = JavaBin PACKAGE = JavaBin::Bool
 FALLBACK: TRUE
-PROTOTYPES: DISABLE
 
 void overload(...)
 OVERLOAD: 0+ \"\"

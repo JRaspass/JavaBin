@@ -88,9 +88,19 @@ uint32_t read_size(void) {
 
 SV* read_undef(pTHX) { return &PL_sv_undef; }
 
-SV* read_bool_true(pTHX) { return Perl_newSVuv(aTHX_ 1); }
+SV* read_bool_true(pTHX) {
+    return Perl_sv_bless(
+        Perl_newRV_noinc(aTHX_ Perl_newSVuv(aTHX_ 1)),
+        Perl_gv_stashpv(aTHX_ "JavaBin::Bool", GV_ADD)
+    );
+}
 
-SV* read_bool_false(pTHX) { return Perl_newSVuv(aTHX_ 0); }
+SV* read_bool_false(pTHX) {
+    return Perl_sv_bless(
+        Perl_newRV_noinc(aTHX_ Perl_newSVuv(aTHX_ 0)),
+        Perl_gv_stashpv(aTHX_ "JavaBin::Bool", GV_ADD)
+    );
+}
 
 SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *(bytes++)); }
 
@@ -320,23 +330,46 @@ SV* read_array(pTHX) {
 }
 
 MODULE = JavaBin PACKAGE = JavaBin
+PROTOTYPES: DISABLE
+
+void true()
+PPCODE:
+    ST(0) = Perl_sv_2mortal(aTHX_ read_bool_true(aTHX));
+
+    XSRETURN(1);
+
+void false()
+PPCODE:
+    ST(0) = Perl_sv_2mortal(aTHX_ read_bool_false(aTHX));
+
+    XSRETURN(1);
 
 void from_javabin(...)
-    PROTOTYPE: DISABLE
-    PPCODE:
-        if (!items) return;
+PPCODE:
+    if (!items) return;
 
-        // Zero the cache.
-        // TODO zero more than just the cache index?
-        cache_pos = 0;
+    // Zero the cache.
+    // TODO zero more than just the cache index?
+    cache_pos = 0;
 
-        // Set bytes, skip the version byte.
-        bytes = (uint8_t *) SvPV_nolen(ST(0)) + 1;
+    // Set bytes, skip the version byte.
+    bytes = (uint8_t *) SvPV_nolen(ST(0)) + 1;
 
-        tag = *(bytes++);
+    tag = *(bytes++);
 
-        //fprintf(stderr, "type = %d or %d\n", tag >> 5, tag);
+    //fprintf(stderr, "type = %d or %d\n", tag >> 5, tag);
 
-        ST(0) = Perl_sv_2mortal(aTHX_ DISPATCH);
+    ST(0) = Perl_sv_2mortal(aTHX_ DISPATCH);
 
-        XSRETURN(1);
+    XSRETURN(1);
+
+MODULE = JavaBin PACKAGE = JavaBin::Bool
+FALLBACK: TRUE
+PROTOTYPES: DISABLE
+
+void overload(...)
+OVERLOAD: 0+ \"\"
+PPCODE:
+    ST(0) = SvRV(ST(0));
+
+    XSRETURN(1);

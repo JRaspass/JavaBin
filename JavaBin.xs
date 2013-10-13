@@ -198,7 +198,7 @@ SV* read_date(pTHX) {
 }
 
 SV* read_map(pTHX) {
-    HV *hash = newHV();
+    HV *hv = newHV();
 
     uint32_t i, key_size, size = tag >> 5 ? read_size() : variable_int();
 
@@ -224,10 +224,10 @@ SV* read_map(pTHX) {
 
         tag = *(bytes++);
 
-        Perl_hv_common(aTHX_ hash, NULL, key, key_size, 0, HV_FETCH_ISSTORE, DISPATCH, 0);
+        Perl_hv_common(aTHX_ hv, NULL, key, key_size, 0, HV_FETCH_ISSTORE, DISPATCH, 0);
     }
 
-    return Perl_newRV_noinc(aTHX_ (SV*) hash);
+    return Perl_newRV_noinc(aTHX_ (SV*) hv);
 }
 
 SV* read_solr_doc(pTHX) {
@@ -238,48 +238,48 @@ SV* read_solr_doc(pTHX) {
 }
 
 SV* read_solr_doc_list(pTHX) {
-    HV *hash = newHV();
+    HV *hv = newHV();
 
     // Assume values are in an array, skip tag & DISPATCH.
     bytes++;
 
     // Assume numFound is a small long.
     tag = *(bytes++);
-    Perl_hv_common(aTHX_ hash, NULL, STR_WITH_LEN("numFound"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
+    Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("numFound"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
 
     // Assume start is a small long.
     tag = *(bytes++);
-    Perl_hv_common(aTHX_ hash, NULL, STR_WITH_LEN("start"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
+    Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("start"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
 
     // Assume maxScore is either a float or undef.
     tag = *(bytes++);
-    Perl_hv_common(aTHX_ hash, NULL, STR_WITH_LEN("maxScore"), 0, HV_FETCH_ISSTORE, tag ? read_float(aTHX) : &PL_sv_undef, 0);
+    Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("maxScore"), 0, HV_FETCH_ISSTORE, tag ? read_float(aTHX) : &PL_sv_undef, 0);
 
     // Assume docs are an array.
     tag = *(bytes++);
-    Perl_hv_common(aTHX_ hash, NULL, STR_WITH_LEN("docs"), 0, HV_FETCH_ISSTORE, read_array(aTHX), 0);
+    Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("docs"), 0, HV_FETCH_ISSTORE, read_array(aTHX), 0);
 
-    return Perl_newRV_noinc(aTHX_ (SV*) hash);
+    return Perl_newRV_noinc(aTHX_ (SV*) hv);
 }
 
 SV* read_byte_array(pTHX) {
-    AV *array = newAV();
+    AV *av = newAV();
     uint32_t i, size = variable_int();
 
     for ( i = 0; i < size; i++ )
-        av_store(array, i, newSViv((int8_t) *(bytes++)));
+        av_store(av, i, newSViv((int8_t) *(bytes++)));
 
-    return Perl_newRV_noinc(aTHX_ (SV*) array);
+    return Perl_newRV_noinc(aTHX_ (SV*) av);
 }
 
 SV* read_iterator(pTHX) {
-    AV *array = newAV();
+    AV *av = newAV();
     uint32_t i = 0;
 
     while ( ( tag = *(bytes++) ) != 15 )
-        av_store(array, i++, DISPATCH);
+        av_store(av, i++, DISPATCH);
 
-    return Perl_newRV_noinc(aTHX_ (SV*) array);
+    return Perl_newRV_noinc(aTHX_ (SV*) av);
 }
 
 SV* read_string(pTHX) {
@@ -316,17 +316,17 @@ SV* read_small_long(pTHX) {
 }
 
 SV* read_array(pTHX) {
-    AV *array = newAV();
+    AV *av = newAV();
 
     uint32_t i, size = read_size();
 
     for ( i = 0; i < size; i++ ) {
         tag = *(bytes++);
 
-        Perl_av_store(aTHX_ array, i, DISPATCH);
+        Perl_av_store(aTHX_ av, i, DISPATCH);
     }
 
-    return Perl_newRV_noinc(aTHX_ (SV*) array);
+    return Perl_newRV_noinc(aTHX_ (SV*) av);
 }
 
 MODULE = JavaBin PACKAGE = JavaBin

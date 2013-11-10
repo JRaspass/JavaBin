@@ -35,7 +35,7 @@ This package provides a deserializer for this format, with a serializer planned.
 
  my $result = from_javabin $binary_data;
 
-Accepts one argument, a binary string of containing the JavaBin.
+Accepts one argument, a binary string containing the JavaBin.
 
 Returns a scalar representation of the data, be that undef, number, string, or reference.
 

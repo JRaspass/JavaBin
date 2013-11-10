@@ -1,9 +1,13 @@
 package JavaBin;
 # ABSTRACT: Apache Solr JavaBin (de)serializer
 
-use XSLoader 0.14;
+require DynaLoader;
 
-XSLoader::load();
+$VERSION = .4;
+
+DynaLoader::bootstrap('JavaBin');
+
+sub dl_load_flags { 0 }
 
 sub import {
     *{ caller() . '::from_javabin' } = \&from_javabin;

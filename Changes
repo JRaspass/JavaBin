@@ -1,6 +1,10 @@
+0.6 2013-11-12
+    - Fix test failures by avoiding using UTF-8 filenames.
+
 0.5 2013-11-12
     - Fix compilation on threaded perls.
     - Fix POD typo.
+
 0.4 2013-11-10
     - Add millisecond precision to dates.
     - Clarify to which Perl data types the Java ones are mapped.

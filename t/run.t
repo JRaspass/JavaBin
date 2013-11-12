@@ -78,10 +78,15 @@ is from_javabin(slurp "date-$_"), $_, "date $_" for sort map /-(.*)/, <date-*>;
 
 bnote 'strings';
 
-for ( sort map /-(.*)/, <string-*> ) {
-    utf8::decode $_;
+my %lookup = (
+    Grussen => "Gr\N{U+00FC}\N{U+00DF}en",
+    snowman => "\N{U+2603}",
+);
 
-    is from_javabin(slurp "string-$_"), $_, qq/string "$_"/;
+for ( sort map /-(.*)/, <string-*> ) {
+    my $out = $lookup{$_} || $_;
+
+    is from_javabin(slurp "string-$_"), $out, qq/string "$out"/;
 }
 
 test_ref array              =>         sort map /-(.*)/, <array-*>;

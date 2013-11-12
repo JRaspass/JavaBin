@@ -3,7 +3,7 @@ package JavaBin;
 
 require DynaLoader;
 
-$VERSION = .5;
+$VERSION = .6;
 
 DynaLoader::bootstrap('JavaBin');
 

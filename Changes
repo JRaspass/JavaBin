@@ -1,4 +1,4 @@
-0.5 ???
+0.5 2013-11-12
     - Fix compilation on threaded perls.
     - Fix POD typo.
 0.4 2013-11-10

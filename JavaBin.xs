@@ -90,6 +90,7 @@ SV* read_undef(pTHX) { return &PL_sv_undef; }
 
 SV* read_bool_true(pTHX) {
     return Perl_sv_bless(
+        aTHX_
         Perl_newRV_noinc(aTHX_ Perl_newSVuv(aTHX_ 1)),
         Perl_gv_stashpv(aTHX_ "JavaBin::Bool", GV_ADD)
     );
@@ -97,6 +98,7 @@ SV* read_bool_true(pTHX) {
 
 SV* read_bool_false(pTHX) {
     return Perl_sv_bless(
+        aTHX_
         Perl_newRV_noinc(aTHX_ Perl_newSVuv(aTHX_ 0)),
         Perl_gv_stashpv(aTHX_ "JavaBin::Bool", GV_ADD)
     );

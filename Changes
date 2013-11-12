@@ -1,4 +1,5 @@
 0.5 ???
+    - Fix compilation on threaded perls.
     - Fix POD typo.
 0.4 2013-11-10
     - Add millisecond precision to dates.

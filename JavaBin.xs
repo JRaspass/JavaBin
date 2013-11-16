@@ -114,6 +114,9 @@ SV* read_short(pTHX) {
     return Perl_newSViv(aTHX_ s);
 }
 
+// For perls with double length NVs this conversion is simple.
+// Read 8 bytes, cast to double, return. For long double perls
+// more magic is used, see read_float for more details.
 SV* read_double(pTHX) {
     uint64_t i = ((uint64_t) in[0] << 56) |
                  ((uint64_t) in[1] << 48) |
@@ -164,10 +167,10 @@ SV* read_long(pTHX) {
     return Perl_newSViv(aTHX_ l);
 }
 
-// JavaBin has a 4byte float format, decimal values in Perl are always doubles,
+// JavaBin has a 4byte float format, NVs in perl are either double or long double,
 // therefore a little magic is required. Read the 4 bytes into an int in the
 // correct endian order. Re-read these bits as a float, stringify this float,
-// then finally numify the string into a double.
+// then finally numify the string into a double or long double.
 SV* read_float(pTHX) {
     uint32_t i = ((in[0] << 24) | (in[1] << 16) | (in[2] << 8) | in[3]);
 

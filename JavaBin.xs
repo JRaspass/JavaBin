@@ -7,7 +7,7 @@
 
 // TODO non fixed cache size?
 uint8_t *cache_keys[100], cache_pos, *in, *out, tag;
-uint32_t cache_sizes[100], out_len;
+uint32_t cache_sizes[100];
 
 SV* read_undef(pTHX);
 SV* read_bool_true(pTHX);
@@ -332,19 +332,19 @@ SV* read_array(pTHX) {
 void write_v_int(uint32_t i) {
     // FIXME
     while ((i & ~0x7F) != 0) {
-        out[out_len++] = (uint8_t) ((i & 0x7f) | 0x80);
+        *(out++) = (uint8_t) ((i & 0x7f) | 0x80);
 
         //i >>>= 7;
     }
 
-    out[out_len++] = (uint8_t) i;
+    *(out++) = (uint8_t) i;
 }
 
 void write_shifted_tag(uint8_t tag, uint32_t len) {
     if (len < 31)
-        out[out_len++] = tag | len;
+        *(out++) = tag | len;
     else {
-        out[out_len++] = tag | 31;
+        *(out++) = tag | 31;
 
         write_v_int(len - 31);
     }
@@ -352,17 +352,15 @@ void write_shifted_tag(uint8_t tag, uint32_t len) {
 
 void write_sv(pTHX_ SV *sv) {
     if ( sv == &PL_sv_undef )
-        out[out_len++] = 0;
+        *(out++) = 0;
     else if ( SvPOK(sv) ) {
         STRLEN len = SvCUR(sv);
 
-        uint8_t *str = (uint8_t *) SvPVX(sv);
-
         write_shifted_tag(32, len);
 
-        memcpy(out + out_len, str, len);
+        memcpy(out, SvPVX(sv), len);
 
-        out_len += len;
+        out += len;
     }
 }
 
@@ -408,14 +406,15 @@ PPCODE:
     if (!items) return;
 
     //FIXME obviously
-    out = malloc(1000);
+    uint8_t *out_start = out = malloc(1000);
 
-    out[0] = '\2';
-    out_len = 1;
+    *(out++) = '\2';
 
     write_sv(aTHX_ ST(0));
 
-    ST(0) = Perl_newSVpvn_flags(aTHX_ (char *)out, out_len, 0);
+    ST(0) = Perl_newSVpvn_flags(aTHX_ (char *)out_start, out - out_start, 0);
+
+    free(out_start);
 
     XSRETURN(1);
 

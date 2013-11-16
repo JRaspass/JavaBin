@@ -107,46 +107,49 @@ SV* read_bool_false(pTHX) {
 SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *(in++)); }
 
 SV* read_short(pTHX) {
+    int16_t s = (int16_t) ((in[0] << 8) | in[1]);
+
     in += 2;
 
-    return Perl_newSViv(aTHX_ (int16_t) (( *(in - 2) << 8 ) | *(in - 1)));
+    return Perl_newSViv(aTHX_ s);
 }
 
 SV* read_double(pTHX) {
-    uint64_t i = (((uint64_t) *in << 56) |
-                  ((uint64_t) *(in + 1) << 48) |
-                  ((uint64_t) *(in + 2) << 40) |
-                  ((uint64_t) *(in + 3) << 32) |
-                  ((uint64_t) *(in + 4) << 24) |
-                  ((uint64_t) *(in + 5) << 16) |
-                  ((uint64_t) *(in + 6) << 8 ) |
-                  ((uint64_t) *(in + 7)));
+    uint64_t d = ((uint64_t) in[0] << 56) |
+                 ((uint64_t) in[1] << 48) |
+                 ((uint64_t) in[2] << 40) |
+                 ((uint64_t) in[3] << 32) |
+                 ((uint64_t) in[4] << 24) |
+                 ((uint64_t) in[5] << 16) |
+                 ((uint64_t) in[6] << 8 ) |
+                 ((uint64_t) in[7]);
 
     in += 8;
 
-    return Perl_newSVnv(aTHX_ *(double*)&i);
+    return Perl_newSVnv(aTHX_ *(double*)&d);
 }
 
 SV* read_int(pTHX) {
+    int32_t i = (int32_t) ((in[0] << 24) | (in[1] << 16) | (in[2] << 8) | in[3]);
+
     in += 4;
 
-    return Perl_newSViv(aTHX_ (int32_t) (( *(in - 4) << 24) |
-                                         ( *(in - 3) << 16) |
-                                         ( *(in - 2) << 8 ) |
-                                         ( *(in - 1) )));
+    return Perl_newSViv(aTHX_ i);
 }
 
 SV* read_long(pTHX) {
+    int64_t l = ((uint64_t) in[0] << 56) |
+                ((uint64_t) in[1] << 48) |
+                ((uint64_t) in[2] << 40) |
+                ((uint64_t) in[3] << 32) |
+                ((uint64_t) in[4] << 24) |
+                ((uint64_t) in[5] << 16) |
+                ((uint64_t) in[6] << 8 ) |
+                ((uint64_t) in[7]);
+
     in += 8;
 
-    return Perl_newSViv(aTHX_ (int64_t) (((uint64_t) *(in - 8) << 56) |
-                                         ((uint64_t) *(in - 7) << 48) |
-                                         ((uint64_t) *(in - 6) << 40) |
-                                         ((uint64_t) *(in - 5) << 32) |
-                                         ((uint64_t) *(in - 4) << 24) |
-                                         ((uint64_t) *(in - 3) << 16) |
-                                         ((uint64_t) *(in - 2) << 8 ) |
-                                         ((uint64_t) *(in - 1))));
+    return Perl_newSViv(aTHX_ l);
 }
 
 // JavaBin has a 4byte float format, decimal values in Perl are always doubles,
@@ -154,10 +157,7 @@ SV* read_long(pTHX) {
 // correct endian order. Re-read these bits as a float, stringify this float,
 // then finally numify the string into a double.
 SV* read_float(pTHX) {
-    uint32_t i = (( *in       << 24) |
-                  ( *(in + 1) << 16) |
-                  ( *(in + 2) << 8 ) |
-                  ( *(in + 3)));
+    uint32_t i = ((in[0] << 24) | (in[1] << 16) | (in[2] << 8) | in[3]);
 
     in += 4;
 
@@ -169,14 +169,14 @@ SV* read_float(pTHX) {
 }
 
 SV* read_date(pTHX) {
-    int64_t date_ms = (((uint64_t) *in       << 56) |
-                       ((uint64_t) *(in + 1) << 48) |
-                       ((uint64_t) *(in + 2) << 40) |
-                       ((uint64_t) *(in + 3) << 32) |
-                       ((uint64_t) *(in + 4) << 24) |
-                       ((uint64_t) *(in + 5) << 16) |
-                       ((uint64_t) *(in + 6) << 8 ) |
-                       ((uint64_t) *(in + 7)));
+    int64_t date_ms = ((uint64_t) in[0] << 56) |
+                      ((uint64_t) in[1] << 48) |
+                      ((uint64_t) in[2] << 40) |
+                      ((uint64_t) in[3] << 32) |
+                      ((uint64_t) in[4] << 24) |
+                      ((uint64_t) in[5] << 16) |
+                      ((uint64_t) in[6] << 8 ) |
+                      ((uint64_t) in[7]);
 
     in += 8;
 

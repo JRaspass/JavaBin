@@ -7,7 +7,7 @@
 
 // TODO non fixed cache size?
 uint8_t *bytes, *cache_keys[100], cache_pos, tag;
-int32_t cache_sizes[100];
+uint32_t cache_sizes[100];
 
 SV* read_undef(pTHX);
 SV* read_bool_true(pTHX);
@@ -196,7 +196,7 @@ SV* read_date(pTHX) {
                                                            t->tm_sec,
                                                            (uint32_t) (date_ms % 1000));
 
-    return Perl_newSVpv(aTHX_ date_str, 24);
+    return Perl_newSVpvn(aTHX_ date_str, 24);
 }
 
 SV* read_map(pTHX) {

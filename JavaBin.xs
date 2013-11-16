@@ -209,7 +209,7 @@ SV* read_map(pTHX) {
 
         tag = *(bytes++);
 
-        if ( key_size = read_size() ) {
+        if (( key_size = read_size() )) {
             key = cache_keys[key_size];
 
             key_size = cache_sizes[key_size];
@@ -226,7 +226,7 @@ SV* read_map(pTHX) {
 
         tag = *(bytes++);
 
-        Perl_hv_common(aTHX_ hv, NULL, key, key_size, 0, HV_FETCH_ISSTORE, DISPATCH, 0);
+        Perl_hv_common(aTHX_ hv, NULL, (char *)key, key_size, 0, HV_FETCH_ISSTORE, DISPATCH, 0);
     }
 
     return Perl_newRV_noinc(aTHX_ (SV*) hv);
@@ -287,7 +287,7 @@ SV* read_iterator(pTHX) {
 SV* read_string(pTHX) {
     uint32_t size = read_size();
 
-    SV *string = Perl_newSVpvn_flags(aTHX_ bytes, size, SVf_UTF8);
+    SV *string = Perl_newSVpvn_flags(aTHX_ (char *)bytes, size, SVf_UTF8);
 
     bytes += size;
 
@@ -373,6 +373,7 @@ PPCODE:
     XSRETURN(1);
 
 MODULE = JavaBin PACKAGE = JavaBin::Bool
+PROTOTYPES: DISABLE
 FALLBACK: TRUE
 
 void overload(...)

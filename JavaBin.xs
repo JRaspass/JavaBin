@@ -354,8 +354,15 @@ PPCODE:
     // TODO zero more than just the cache index?
     cache_pos = 0;
 
-    // Set bytes, skip the version byte.
-    bytes = (uint8_t *) SvPV_nolen(ST(0)) + 1;
+    STRLEN len;
+
+    bytes = (uint8_t *) SvPV(ST(0), len);
+
+    if ( len < 2 )
+        Perl_croak("Invalid JavaBin, insufficient length");
+
+    if ( *(bytes++) != 2 )
+        Perl_croak("Invalid JavaBin, expected version 2");
 
     tag = *(bytes++);
 

@@ -31,16 +31,11 @@ binmode Test::More->builder->$_, ':utf8' for qw/failure_output output todo_outpu
 
 chdir 't/data' or die $!;
 
-bnote 'no args';
-
-is from_javabin(), undef, 'scalar context';
-is_deeply [from_javabin()], [], 'array context';
-
 bnote 'constants';
 
-is from_javabin("\0\0"), undef, 'undef';
-is from_javabin("\0\1"), 1, 'true';
-is from_javabin("\0\2"), 0, 'false';
+is from_javabin("\2\0"), undef, 'undef';
+is from_javabin("\2\1"), 1, 'true';
+is from_javabin("\2\2"), 0, 'false';
 
 bnote 'bytes';
 

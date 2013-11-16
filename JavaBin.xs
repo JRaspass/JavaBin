@@ -115,7 +115,7 @@ SV* read_short(pTHX) {
 }
 
 SV* read_double(pTHX) {
-    uint64_t d = ((uint64_t) in[0] << 56) |
+    uint64_t i = ((uint64_t) in[0] << 56) |
                  ((uint64_t) in[1] << 48) |
                  ((uint64_t) in[2] << 40) |
                  ((uint64_t) in[3] << 32) |
@@ -126,7 +126,19 @@ SV* read_double(pTHX) {
 
     in += 8;
 
-    return Perl_newSVnv(aTHX_ *(double*)&d);
+#ifdef USE_LONG_DOUBLE
+    char *str;
+
+    asprintf(&str, "%.14f", *(double*)&i);
+
+    long double d = strtold(str, NULL);
+
+    free(str);
+
+    return Perl_newSVnv(aTHX_ d);
+#else
+    return Perl_newSVnv(aTHX_ *(double*)&i);
+#endif
 }
 
 SV* read_int(pTHX) {
@@ -161,11 +173,19 @@ SV* read_float(pTHX) {
 
     in += 4;
 
-    char buffer[47];
+    char *str;
 
-    sprintf(buffer, "%f", *(float*)&i);
+    asprintf(&str, "%f", *(float*)&i);
 
-    return Perl_newSVnv(aTHX_ strtod(buffer, NULL));
+#ifdef USE_LONG_DOUBLE
+    long double d = strtold(str, NULL);
+#else
+    double d = strtod(str, NULL);
+#endif
+
+    free(str);
+
+    return Perl_newSVnv(aTHX_ d);
 }
 
 SV* read_date(pTHX) {

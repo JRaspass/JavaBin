@@ -1,4 +1,5 @@
 use strict;
+use utf8;
 use warnings;
 
 use JavaBin;
@@ -9,11 +10,11 @@ binmode Test::More->builder->$_, ':utf8' for qw/failure_output output todo_outpu
 for (
     '',
     'perl',
-    "\N{U+2603}",
-    "Gr\N{U+00FC}\N{U+00DF}en",
+    "☃",
+    "Grüßen",
     'The quick brown fox jumped over the lazy dog',
 ) {
-    utf8::encode(my $bytes = $_);
+    utf8::encode my $bytes = $_;
 
     subtest qq/"$bytes"/, sub {
         my $expected = "\2";

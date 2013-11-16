@@ -71,19 +71,6 @@ bnote 'dates';
 
 is from_javabin(slurp "date-$_"), $_, "date $_" for sort map /-(.*)/, <date-*>;
 
-bnote 'strings';
-
-my %lookup = (
-    Grussen => "Gr\N{U+00FC}\N{U+00DF}en",
-    snowman => "\N{U+2603}",
-);
-
-for ( sort map /-(.*)/, <string-*> ) {
-    my $out = $lookup{$_} || $_;
-
-    is from_javabin(slurp "string-$_"), $out, qq/string "$out"/;
-}
-
 test_ref array              =>         sort map /-(.*)/, <array-*>;
 test_ref byte_array         =>         sort map /-(.*)/, <byte_array-*>;
 test_ref iterator           =>         sort map /-(.*)/, <iterator-*>;

@@ -10,7 +10,11 @@ DynaLoader::bootstrap('JavaBin');
 sub dl_load_flags { 0 }
 
 sub import {
-    *{ caller() . '::from_javabin' } = \&from_javabin;
+    shift;
+
+    my $caller = caller;
+
+    *{ $caller . "::$_" } = \&$_ for @_ ? @_ : qw/from_javabin to_javabin/;
 }
 
 1;

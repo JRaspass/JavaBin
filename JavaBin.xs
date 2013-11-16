@@ -6,8 +6,8 @@
 #define DISPATCH tag >> 5 ? dispatch_shift[tag >> 5](aTHX) : dispatch[tag](aTHX)
 
 // TODO non fixed cache size?
-uint8_t *bytes, *cache_keys[100], cache_pos, tag;
-uint32_t cache_sizes[100];
+uint8_t *cache_keys[100], cache_pos, *in, *out, tag;
+uint32_t cache_sizes[100], out_len;
 
 SV* read_undef(pTHX);
 SV* read_bool_true(pTHX);
@@ -69,10 +69,10 @@ SV *(*dispatch_shift[7])(pTHX) = {
 // http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
 uint32_t variable_int(void) {
     uint8_t shift;
-    uint32_t result = (tag = *(bytes++)) & 127;
+    uint32_t result = (tag = *(in++)) & 127;
 
     for (shift = 7; tag & 128; shift += 7)
-        result |= ((uint32_t)((tag = *(bytes++)) & 127)) << shift;
+        result |= ((uint32_t)((tag = *(in++)) & 127)) << shift;
 
     return result;
 }
@@ -104,51 +104,49 @@ SV* read_bool_false(pTHX) {
     );
 }
 
-SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *(bytes++)); }
+SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *(in++)); }
 
 SV* read_short(pTHX) {
-    bytes += 2;
+    in += 2;
 
-    return Perl_newSViv(aTHX_ (int16_t) ( ( *(bytes - 2) << 8 ) | *(bytes - 1)) );
+    return Perl_newSViv(aTHX_ (int16_t) (( *(in - 2) << 8 ) | *(in - 1)));
 }
 
 SV* read_double(pTHX) {
-    uint64_t i = ( ( (uint64_t) *bytes << 56 ) |
-                   ( (uint64_t) *(bytes + 1) << 48 ) |
-                   ( (uint64_t) *(bytes + 2) << 40 ) |
-                   ( (uint64_t) *(bytes + 3) << 32 ) |
-                   ( (uint64_t) *(bytes + 4) << 24 ) |
-                   ( (uint64_t) *(bytes + 5) << 16 ) |
-                   ( (uint64_t) *(bytes + 6) << 8  ) |
-                   ( (uint64_t) *(bytes + 7) ) );
+    uint64_t i = (((uint64_t) *in << 56) |
+                  ((uint64_t) *(in + 1) << 48) |
+                  ((uint64_t) *(in + 2) << 40) |
+                  ((uint64_t) *(in + 3) << 32) |
+                  ((uint64_t) *(in + 4) << 24) |
+                  ((uint64_t) *(in + 5) << 16) |
+                  ((uint64_t) *(in + 6) << 8 ) |
+                  ((uint64_t) *(in + 7)));
 
-    bytes += 8;
+    in += 8;
 
     return Perl_newSVnv(aTHX_ *(double*)&i);
 }
 
 SV* read_int(pTHX) {
-    // This is from network (big) endian to intel (little) endian.
-    // TODO test/write alternative for POWER PC (big)
-    bytes += 4;
+    in += 4;
 
-    return Perl_newSViv(aTHX_ (int32_t) ( ( *(bytes - 4) << 24 ) |
-                                          ( *(bytes - 3) << 16 ) |
-                                          ( *(bytes - 2) << 8  ) |
-                                          ( *(bytes - 1) ) ) );
+    return Perl_newSViv(aTHX_ (int32_t) (( *(in - 4) << 24) |
+                                         ( *(in - 3) << 16) |
+                                         ( *(in - 2) << 8 ) |
+                                         ( *(in - 1) )));
 }
 
 SV* read_long(pTHX) {
-    bytes += 8;
+    in += 8;
 
-    return Perl_newSViv(aTHX_ (int64_t) ( ( (uint64_t) *(bytes - 8) << 56 ) |
-                                          ( (uint64_t) *(bytes - 7) << 48 ) |
-                                          ( (uint64_t) *(bytes - 6) << 40 ) |
-                                          ( (uint64_t) *(bytes - 5) << 32 ) |
-                                          ( (uint64_t) *(bytes - 4) << 24 ) |
-                                          ( (uint64_t) *(bytes - 3) << 16 ) |
-                                          ( (uint64_t) *(bytes - 2) << 8  ) |
-                                          ( (uint64_t) *(bytes - 1) ) ) );
+    return Perl_newSViv(aTHX_ (int64_t) (((uint64_t) *(in - 8) << 56) |
+                                         ((uint64_t) *(in - 7) << 48) |
+                                         ((uint64_t) *(in - 6) << 40) |
+                                         ((uint64_t) *(in - 5) << 32) |
+                                         ((uint64_t) *(in - 4) << 24) |
+                                         ((uint64_t) *(in - 3) << 16) |
+                                         ((uint64_t) *(in - 2) << 8 ) |
+                                         ((uint64_t) *(in - 1))));
 }
 
 // JavaBin has a 4byte float format, decimal values in Perl are always doubles,
@@ -156,12 +154,12 @@ SV* read_long(pTHX) {
 // correct endian order. Re-read these bits as a float, stringify this float,
 // then finally numify the string into a double.
 SV* read_float(pTHX) {
-    uint32_t i = ( ( *bytes       << 24 ) |
-                   ( *(bytes + 1) << 16 ) |
-                   ( *(bytes + 2) << 8  ) |
-                   ( *(bytes + 3) ) );
+    uint32_t i = (( *in       << 24) |
+                  ( *(in + 1) << 16) |
+                  ( *(in + 2) << 8 ) |
+                  ( *(in + 3)));
 
-    bytes += 4;
+    in += 4;
 
     char buffer[47];
 
@@ -171,16 +169,16 @@ SV* read_float(pTHX) {
 }
 
 SV* read_date(pTHX) {
-    int64_t date_ms = ( ( (uint64_t) *bytes       << 56 ) |
-                        ( (uint64_t) *(bytes + 1) << 48 ) |
-                        ( (uint64_t) *(bytes + 2) << 40 ) |
-                        ( (uint64_t) *(bytes + 3) << 32 ) |
-                        ( (uint64_t) *(bytes + 4) << 24 ) |
-                        ( (uint64_t) *(bytes + 5) << 16 ) |
-                        ( (uint64_t) *(bytes + 6) << 8  ) |
-                        ( (uint64_t) *(bytes + 7) ) );
+    int64_t date_ms = (((uint64_t) *in       << 56) |
+                       ((uint64_t) *(in + 1) << 48) |
+                       ((uint64_t) *(in + 2) << 40) |
+                       ((uint64_t) *(in + 3) << 32) |
+                       ((uint64_t) *(in + 4) << 24) |
+                       ((uint64_t) *(in + 5) << 16) |
+                       ((uint64_t) *(in + 6) << 8 ) |
+                       ((uint64_t) *(in + 7)));
 
-    bytes += 8;
+    in += 8;
 
     time_t date = date_ms / 1000;
 
@@ -204,27 +202,27 @@ SV* read_map(pTHX) {
 
     uint32_t i, key_size, size = tag >> 5 ? read_size() : variable_int();
 
-    for ( i = 0; i < size; i++ ) {
+    for (i = 0; i < size; i++) {
         uint8_t *key;
 
-        tag = *(bytes++);
+        tag = *(in++);
 
-        if (( key_size = read_size() )) {
+        if ((key_size = read_size())) {
             key = cache_keys[key_size];
 
             key_size = cache_sizes[key_size];
         }
         else {
-            tag = *(bytes++);
+            tag = *(in++);
 
             cache_sizes[++cache_pos] = key_size = read_size();
 
-            cache_keys[cache_pos] = key = bytes;
+            cache_keys[cache_pos] = key = in;
 
-            bytes += key_size;
+            in += key_size;
         }
 
-        tag = *(bytes++);
+        tag = *(in++);
 
         Perl_hv_common(aTHX_ hv, NULL, (char *)key, key_size, 0, HV_FETCH_ISSTORE, DISPATCH, 0);
     }
@@ -233,7 +231,7 @@ SV* read_map(pTHX) {
 }
 
 SV* read_solr_doc(pTHX) {
-    tag = *(bytes++);
+    tag = *(in++);
 
     // Assume the doc is implemented as a simple ordered map.
     return read_map(aTHX);
@@ -243,22 +241,22 @@ SV* read_solr_doc_list(pTHX) {
     HV *hv = newHV();
 
     // Assume values are in an array, skip tag & DISPATCH.
-    bytes++;
+    in++;
 
     // Assume numFound is a small long.
-    tag = *(bytes++);
+    tag = *(in++);
     Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("numFound"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
 
     // Assume start is a small long.
-    tag = *(bytes++);
+    tag = *(in++);
     Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("start"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
 
     // Assume maxScore is either a float or undef.
-    tag = *(bytes++);
+    tag = *(in++);
     Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("maxScore"), 0, HV_FETCH_ISSTORE, tag ? read_float(aTHX) : &PL_sv_undef, 0);
 
     // Assume docs are an array.
-    tag = *(bytes++);
+    tag = *(in++);
     Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("docs"), 0, HV_FETCH_ISSTORE, read_array(aTHX), 0);
 
     return Perl_newRV_noinc(aTHX_ (SV*) hv);
@@ -269,7 +267,7 @@ SV* read_byte_array(pTHX) {
     uint32_t i, size = variable_int();
 
     for ( i = 0; i < size; i++ )
-        av_store(av, i, newSViv((int8_t) *(bytes++)));
+        av_store(av, i, newSViv((int8_t) *(in++)));
 
     return Perl_newRV_noinc(aTHX_ (SV*) av);
 }
@@ -278,7 +276,7 @@ SV* read_iterator(pTHX) {
     AV *av = newAV();
     uint32_t i = 0;
 
-    while ( ( tag = *(bytes++) ) != 15 )
+    while ((tag = *(in++)) != 15)
         av_store(av, i++, DISPATCH);
 
     return Perl_newRV_noinc(aTHX_ (SV*) av);
@@ -287,9 +285,9 @@ SV* read_iterator(pTHX) {
 SV* read_string(pTHX) {
     uint32_t size = read_size();
 
-    SV *string = Perl_newSVpvn_flags(aTHX_ (char *)bytes, size, SVf_UTF8);
+    SV *string = Perl_newSVpvn_flags(aTHX_ (char *)in, size, SVf_UTF8);
 
-    bytes += size;
+    in += size;
 
     return string;
 }
@@ -310,7 +308,7 @@ SV* read_small_long(pTHX) {
     if (tag & 16) {
         uint8_t shift = 4;
 
-        do result |= ((uint64_t)((tag = *(bytes++)) & 127)) << shift;
+        do result |= ((uint64_t)((tag = *(in++)) & 127)) << shift;
         while (tag & 128 && (shift += 7));
     }
 
@@ -322,13 +320,50 @@ SV* read_array(pTHX) {
 
     uint32_t i, size = read_size();
 
-    for ( i = 0; i < size; i++ ) {
-        tag = *(bytes++);
+    for (i = 0; i < size; i++) {
+        tag = *(in++);
 
         Perl_av_store(aTHX_ av, i, DISPATCH);
     }
 
     return Perl_newRV_noinc(aTHX_ (SV*) av);
+}
+
+void write_v_int(uint32_t i) {
+    // FIXME
+    while ((i & ~0x7F) != 0) {
+        out[out_len++] = (uint8_t) ((i & 0x7f) | 0x80);
+
+        //i >>>= 7;
+    }
+
+    out[out_len++] = (uint8_t) i;
+}
+
+void write_shifted_tag(uint8_t tag, uint32_t len) {
+    if (len < 31)
+        out[out_len++] = tag | len;
+    else {
+        out[out_len++] = tag | 31;
+
+        write_v_int(len - 31);
+    }
+}
+
+void write_sv(pTHX_ SV *sv) {
+    if ( sv == &PL_sv_undef )
+        out[out_len++] = 0;
+    else if ( SvPOK(sv) ) {
+        STRLEN len = SvCUR(sv);
+
+        uint8_t *str = (uint8_t *) SvPVX(sv);
+
+        write_shifted_tag(32, len);
+
+        memcpy(out + out_len, str, len);
+
+        out_len += len;
+    }
 }
 
 MODULE = JavaBin PACKAGE = JavaBin
@@ -354,21 +389,33 @@ PPCODE:
     // TODO zero more than just the cache index?
     cache_pos = 0;
 
-    STRLEN len;
-
-    bytes = (uint8_t *) SvPV(ST(0), len);
-
-    if ( len < 2 )
+    if ( SvCUR(ST(0)) < 2 )
         Perl_croak("Invalid JavaBin, insufficient length");
 
-    if ( *(bytes++) != 2 )
+    in = (uint8_t *) SvPVX(ST(0));
+
+    if ( *(in++) != 2 )
         Perl_croak("Invalid JavaBin, expected version 2");
 
-    tag = *(bytes++);
-
-    //fprintf(stderr, "type = %d or %d\n", tag >> 5, tag);
+    tag = *(in++);
 
     ST(0) = Perl_sv_2mortal(aTHX_ DISPATCH);
+
+    XSRETURN(1);
+
+void to_javabin(...)
+PPCODE:
+    if (!items) return;
+
+    //FIXME obviously
+    out = malloc(1000);
+
+    out[0] = '\2';
+    out_len = 1;
+
+    write_sv(aTHX_ ST(0));
+
+    ST(0) = Perl_newSVpvn_flags(aTHX_ (char *)out, out_len, 0);
 
     XSRETURN(1);
 

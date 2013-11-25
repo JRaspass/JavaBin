@@ -403,7 +403,7 @@ void write_sv(pTHX_ SV *sv) {
             out += len;
 
             break;
-        case 8: //FIXME Were regexes always 8?
+        case SVt_REGEXP:
             Perl_croak(aTHX_ "Invalid to_javabin input: regex");
         case SVt_PVGV:
             Perl_croak(aTHX_ "Invalid to_javabin input: glob");

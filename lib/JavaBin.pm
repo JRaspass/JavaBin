@@ -1,9 +1,7 @@
-package JavaBin;
+package JavaBin 0.7;
 # ABSTRACT: Apache Solr JavaBin (de)serializer
 
 require DynaLoader;
-
-$VERSION = .7;
 
 DynaLoader::bootstrap('JavaBin');
 

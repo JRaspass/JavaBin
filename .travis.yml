@@ -6,6 +6,4 @@ perl:
     - "5.16"
     - "5.14"
     - "5.12"
-    - "5.10"
-    - "5.8"
 script: perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1 && make && prove -blv

@@ -1,4 +1,5 @@
 0.7 ???
+    - Bump minimum Perl version to 5.12.
     - Croak on insufficient length.
     - Croak on invalid JavaBin version. Only accept version 2.
     - Fix loss of precision with floats on -Duselongdouble perls.

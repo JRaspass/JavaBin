@@ -392,7 +392,7 @@ void write_sv(pTHX_ SV *sv) {
         }
         case SVt_PV:
             if (ref)
-                Perl_croak("Invalid to_javabin input: string ref");
+                Perl_croak(aTHX_ "Invalid to_javabin input: string ref");
 
             STRLEN len = SvCUR(sv);
 
@@ -404,9 +404,9 @@ void write_sv(pTHX_ SV *sv) {
 
             break;
         case SVt_REGEXP:
-            Perl_croak("Invalid to_javabin input: regex");
+            Perl_croak(aTHX_ "Invalid to_javabin input: regex");
         case SVt_PVGV:
-            Perl_croak("Invalid to_javabin input: glob");
+            Perl_croak(aTHX_ "Invalid to_javabin input: glob");
         case SVt_PVAV:
             fprintf(stderr, "arrayref\n");
             break;
@@ -414,7 +414,7 @@ void write_sv(pTHX_ SV *sv) {
             fprintf(stderr, "hashref\n");
             break;
         case SVt_PVCV:
-            Perl_croak("Invalid to_javabin input: sub ref");
+            Perl_croak(aTHX_ "Invalid to_javabin input: sub ref");
         default:
             fprintf(stderr, "other: %d\n", SvTYPE(sv));
     }
@@ -444,12 +444,12 @@ PPCODE:
     cache_pos = 0;
 
     if ( SvCUR(ST(0)) < 2 )
-        Perl_croak("Invalid from_javabin input: insufficient length");
+        Perl_croak(aTHX_ "Invalid from_javabin input: insufficient length");
 
     in = (uint8_t *) SvPVX(ST(0));
 
     if ( *(in++) != 2 )
-        Perl_croak("Invalid from_javabin input: expected version 2");
+        Perl_croak(aTHX_ "Invalid from_javabin input: expected version 2");
 
     tag = *(in++);
 

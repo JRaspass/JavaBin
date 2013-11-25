@@ -382,15 +382,15 @@ void write_sv(pTHX_ SV *sv) {
     }
 
     switch (SvTYPE(sv)) {
-        case 0:
+        case SVt_NULL:
             *(out++) = 0;
             break;
-        case 1: {
+        case SVt_IV: {
             int64_t i = SvIV(sv);
             fprintf(stderr, "%ld\n", i);
             break;
         }
-        case 3:
+        case SVt_PV:
             if (ref)
                 Perl_croak(aTHX_ "Invalid to_javabin input: string ref");
 
@@ -403,17 +403,17 @@ void write_sv(pTHX_ SV *sv) {
             out += len;
 
             break;
-        case 8:
+        case 8: //FIXME Were regexes always 8?
             Perl_croak(aTHX_ "Invalid to_javabin input: regex");
-        case 9:
+        case SVt_PVGV:
             Perl_croak(aTHX_ "Invalid to_javabin input: glob");
-        case 11:
+        case SVt_PVAV:
             fprintf(stderr, "arrayref\n");
             break;
-        case 12:
+        case SVt_PVHV:
             fprintf(stderr, "hashref\n");
             break;
-        case 13:
+        case SVt_PVCV:
             Perl_croak(aTHX_ "Invalid to_javabin input: sub ref");
         default:
             fprintf(stderr, "other: %d\n", SvTYPE(sv));

@@ -33,31 +33,8 @@ chdir 't/data' or die $!;
 
 bnote 'constants';
 
-is from_javabin("\2\0"), undef, 'undef';
 is from_javabin("\2\1"), 1, 'true';
 is from_javabin("\2\2"), 0, 'false';
-
-bnote 'bytes';
-
-is from_javabin(slurp "byte-$_"), $_, "byte $_" for nsort map /-(.*)/, <byte-*>;
-
-bnote 'shorts';
-
-is from_javabin(slurp "short-$_"), $_, "short $_" for nsort map /-(.*)/, <short-*>;
-
-bnote 'ints';
-
-is from_javabin(slurp "int-$_"), $_, "int $_" for nsort map /-(.*)/, <int-*>;
-
-bnote 'longs';
-
-SKIP: {
-    my @longs = nsort map /-(.*)/, <long-*>;
-
-    skip '64bit ints are unsupported on your platform.', ~~@longs unless eval { pack 'q' };
-
-    is from_javabin(slurp "long-$_"), $_, "long $_" for @longs;
-};
 
 bnote 'floats';
 

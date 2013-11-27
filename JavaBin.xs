@@ -385,9 +385,40 @@ void write_sv(pTHX_ SV *sv) {
         case SVt_NULL:
             *(out++) = 0;
             break;
-        case SVt_IV: {
+        case SVt_IV:
+        case SVt_PVIV: {
             int64_t i = SvIV(sv);
-            fprintf(stderr, "%ld\n", i);
+
+            if ( -129 < i && i < 128 ) {
+                *(out++) = 3;
+                *(out++) = i;
+            }
+            else if ( -32769 < i && i < 32768 )
+            {
+                *(out++) = 4;
+                *(out++) = i >> 8;
+                *(out++) = i;
+            }
+            else if ( -2147483649 < i && i < 2147483648 )
+            {
+                *(out++) = 6;
+                *(out++) = i >> 24;
+                *(out++) = i >> 16;
+                *(out++) = i >> 8;
+                *(out++) = i;
+            }
+            else {
+                *(out++) = 7;
+                *(out++) = i >> 56;
+                *(out++) = i >> 48;
+                *(out++) = i >> 40;
+                *(out++) = i >> 32;
+                *(out++) = i >> 24;
+                *(out++) = i >> 16;
+                *(out++) = i >> 8;
+                *(out++) = i;
+            }
+
             break;
         }
         case SVt_PV:

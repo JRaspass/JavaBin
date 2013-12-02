@@ -389,16 +389,16 @@ void write_sv(pTHX_ SV *sv) {
         case SVt_PVIV: {
             int64_t i = SvIV(sv);
 
-            if ( -129 < i && i < 128 ) {
+            if (i == (int8_t) i) {
                 *(out++) = 3;
                 *(out++) = i;
             }
-            else if ( -32769 < i && i < 32768 ) {
+            else if (i == (int16_t) i) {
                 *(out++) = 4;
                 *(out++) = i >> 8;
                 *(out++) = i;
             }
-            else if ( -2147483649 < i && i < 2147483648 ) {
+            else if (i == (int32_t) i) {
                 *(out++) = 6;
                 *(out++) = i >> 24;
                 *(out++) = i >> 16;

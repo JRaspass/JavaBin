@@ -69,10 +69,10 @@ SV *(*dispatch_shift[7])(pTHX) = {
 // http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
 uint32_t variable_int(void) {
     uint8_t shift;
-    uint32_t result = (tag = *(in++)) & 127;
+    uint32_t result = (tag = *in++) & 127;
 
     for (shift = 7; tag & 128; shift += 7)
-        result |= ((uint32_t)((tag = *(in++)) & 127)) << shift;
+        result |= ((uint32_t)((tag = *in++) & 127)) << shift;
 
     return result;
 }
@@ -104,7 +104,7 @@ SV* read_bool_false(pTHX) {
     );
 }
 
-SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *(in++)); }
+SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *in++); }
 
 SV* read_short(pTHX) {
     int16_t s = (int16_t) ((in[0] << 8) | in[1]);
@@ -228,7 +228,7 @@ SV* read_map(pTHX) {
     for (i = 0; i < size; i++) {
         uint8_t *key;
 
-        tag = *(in++);
+        tag = *in++;
 
         if ((key_size = read_size())) {
             key = cache_keys[key_size];
@@ -236,7 +236,7 @@ SV* read_map(pTHX) {
             key_size = cache_sizes[key_size];
         }
         else {
-            tag = *(in++);
+            tag = *in++;
 
             cache_sizes[++cache_pos] = key_size = read_size();
 
@@ -245,7 +245,7 @@ SV* read_map(pTHX) {
             in += key_size;
         }
 
-        tag = *(in++);
+        tag = *in++;
 
         Perl_hv_common(aTHX_ hv, NULL, (char *)key, key_size, 0, HV_FETCH_ISSTORE, DISPATCH, 0);
     }
@@ -254,7 +254,7 @@ SV* read_map(pTHX) {
 }
 
 SV* read_solr_doc(pTHX) {
-    tag = *(in++);
+    tag = *in++;
 
     // Assume the doc is implemented as a simple ordered map.
     return read_map(aTHX);
@@ -267,19 +267,19 @@ SV* read_solr_doc_list(pTHX) {
     in++;
 
     // Assume numFound is a small long.
-    tag = *(in++);
+    tag = *in++;
     Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("numFound"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
 
     // Assume start is a small long.
-    tag = *(in++);
+    tag = *in++;
     Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("start"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
 
     // Assume maxScore is either a float or undef.
-    tag = *(in++);
+    tag = *in++;
     Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("maxScore"), 0, HV_FETCH_ISSTORE, tag ? read_float(aTHX) : &PL_sv_undef, 0);
 
     // Assume docs are an array.
-    tag = *(in++);
+    tag = *in++;
     Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("docs"), 0, HV_FETCH_ISSTORE, read_array(aTHX), 0);
 
     return Perl_newRV_noinc(aTHX_ (SV*) hv);
@@ -289,8 +289,8 @@ SV* read_byte_array(pTHX) {
     AV *av = newAV();
     uint32_t i, size = variable_int();
 
-    for ( i = 0; i < size; i++ )
-        av_store(av, i, newSViv((int8_t) *(in++)));
+    for (i = 0; i < size; i++)
+        av_store(av, i, newSViv((int8_t) *in++));
 
     return Perl_newRV_noinc(aTHX_ (SV*) av);
 }
@@ -299,7 +299,7 @@ SV* read_iterator(pTHX) {
     AV *av = newAV();
     uint32_t i = 0;
 
-    while ((tag = *(in++)) != 15)
+    while ((tag = *in++) != 15)
         av_store(av, i++, DISPATCH);
 
     return Perl_newRV_noinc(aTHX_ (SV*) av);
@@ -331,7 +331,7 @@ SV* read_small_long(pTHX) {
     if (tag & 16) {
         uint8_t shift = 4;
 
-        do result |= ((uint64_t)((tag = *(in++)) & 127)) << shift;
+        do result |= ((uint64_t)((tag = *in++) & 127)) << shift;
         while (tag & 128 && (shift += 7));
     }
 
@@ -344,7 +344,7 @@ SV* read_array(pTHX) {
     uint32_t i, size = read_size();
 
     for (i = 0; i < size; i++) {
-        tag = *(in++);
+        tag = *in++;
 
         Perl_av_store(aTHX_ av, i, DISPATCH);
     }
@@ -355,19 +355,19 @@ SV* read_array(pTHX) {
 void write_v_int(uint32_t i) {
     // FIXME
     while ((i & ~0x7F) != 0) {
-        *(out++) = (uint8_t) ((i & 0x7f) | 0x80);
+        *out++ = (uint8_t) ((i & 0x7f) | 0x80);
 
         //i >>>= 7;
     }
 
-    *(out++) = (uint8_t) i;
+    *out++ = (uint8_t) i;
 }
 
 void write_shifted_tag(uint8_t tag, uint32_t len) {
     if (len < 31)
-        *(out++) = tag | len;
+        *out++ = tag | len;
     else {
-        *(out++) = tag | 31;
+        *out++ = tag | 31;
 
         write_v_int(len - 31);
     }
@@ -383,38 +383,38 @@ void write_sv(pTHX_ SV *sv) {
 
     switch (SvTYPE(sv)) {
         case SVt_NULL:
-            *(out++) = 0;
+            *out++ = 0;
             break;
         case SVt_IV:
         case SVt_PVIV: {
             int64_t i = SvIV(sv);
 
             if (i == (int8_t) i) {
-                *(out++) = 3;
-                *(out++) = i;
+                *out++ = 3;
+                *out++ = i;
             }
             else if (i == (int16_t) i) {
-                *(out++) = 4;
-                *(out++) = i >> 8;
-                *(out++) = i;
+                *out++ = 4;
+                *out++ = i >> 8;
+                *out++ = i;
             }
             else if (i == (int32_t) i) {
-                *(out++) = 6;
-                *(out++) = i >> 24;
-                *(out++) = i >> 16;
-                *(out++) = i >> 8;
-                *(out++) = i;
+                *out++ = 6;
+                *out++ = i >> 24;
+                *out++ = i >> 16;
+                *out++ = i >> 8;
+                *out++ = i;
             }
             else {
-                *(out++) = 7;
-                *(out++) = i >> 56;
-                *(out++) = i >> 48;
-                *(out++) = i >> 40;
-                *(out++) = i >> 32;
-                *(out++) = i >> 24;
-                *(out++) = i >> 16;
-                *(out++) = i >> 8;
-                *(out++) = i;
+                *out++ = 7;
+                *out++ = i >> 56;
+                *out++ = i >> 48;
+                *out++ = i >> 40;
+                *out++ = i >> 32;
+                *out++ = i >> 24;
+                *out++ = i >> 16;
+                *out++ = i >> 8;
+                *out++ = i;
             }
 
             break;
@@ -472,15 +472,15 @@ PPCODE:
     // TODO zero more than just the cache index?
     cache_pos = 0;
 
-    if ( SvCUR(ST(0)) < 2 )
+    if (SvCUR(ST(0)) < 2)
         Perl_croak(aTHX_ "Invalid from_javabin input: insufficient length");
 
     in = (uint8_t *) SvPVX(ST(0));
 
-    if ( *(in++) != 2 )
+    if (*in++ != 2)
         Perl_croak(aTHX_ "Invalid from_javabin input: expected version 2");
 
-    tag = *(in++);
+    tag = *in++;
 
     ST(0) = Perl_sv_2mortal(aTHX_ DISPATCH);
 
@@ -493,7 +493,7 @@ PPCODE:
     //FIXME obviously
     uint8_t *out_start = out = malloc(1000);
 
-    *(out++) = '\2';
+    *out++ = '\2';
 
     write_sv(aTHX_ ST(0));
 

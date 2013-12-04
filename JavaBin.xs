@@ -290,12 +290,10 @@ SV* read_byte_array(pTHX) {
     uint32_t size;
 
     if ((size = variable_int())) {
-        SV **ary = safemalloc(size * sizeof(SV*));
+        SV **ary = safemalloc(size * sizeof(SV*)), **end = ary + size;
 
         AvALLOC(av) = AvARRAY(av) = ary;
         AvFILLp(av) = AvMAX(av) = size - 1;
-
-        SV **end = ary + size;
 
         while (ary != end)
             *ary++ = newSViv((int8_t) *in++);
@@ -352,12 +350,10 @@ SV* read_array(pTHX) {
     uint32_t size;
 
     if ((size = read_size())) {
-        SV **ary = safemalloc(size * sizeof(SV*));
+        SV **ary = safemalloc(size * sizeof(SV*)), **end = ary + size;
 
         AvALLOC(av) = AvARRAY(av) = ary;
         AvFILLp(av) = AvMAX(av) = size - 1;
-
-        SV **end = ary + size;
 
         while (ary != end) {
             tag = *in++;

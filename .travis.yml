@@ -1,5 +1,4 @@
-before_install: cpanm -nq Devel::Cover::Report::Coveralls
-install: ""
+install: cpanm -nq Devel::Cover::Report::Coveralls
 language: perl
 perl:
     - "5.19"

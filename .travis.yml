@@ -1,3 +1,4 @@
+before_install: cpanm -nq Devel::Cover::Report::Coveralls
 install: ""
 language: perl
 perl:
@@ -6,4 +7,4 @@ perl:
     - "5.16"
     - "5.14"
     - "5.12"
-script: perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1 && make && prove -blv
+script: perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1 && make && cover -test -report coveralls

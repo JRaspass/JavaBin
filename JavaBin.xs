@@ -287,10 +287,19 @@ SV* read_solr_doc_list(pTHX) {
 
 SV* read_byte_array(pTHX) {
     AV *av = newAV();
-    uint32_t i, size = variable_int();
+    uint32_t size;
 
-    for (i = 0; i < size; i++)
-        av_store(av, i, newSViv((int8_t) *in++));
+    if ((size = variable_int())) {
+        SV **ary = safemalloc(size * sizeof(SV*));
+
+        AvALLOC(av) = AvARRAY(av) = ary;
+        AvFILLp(av) = AvMAX(av) = size - 1;
+
+        SV **end = ary + size;
+
+        while (ary != end)
+            *ary++ = newSViv((int8_t) *in++);
+    }
 
     return Perl_newRV_noinc(aTHX_ (SV*) av);
 }
@@ -340,13 +349,20 @@ SV* read_small_long(pTHX) {
 
 SV* read_array(pTHX) {
     AV *av = newAV();
+    uint32_t size;
 
-    uint32_t i, size = read_size();
+    if ((size = read_size())) {
+        SV **ary = safemalloc(size * sizeof(SV*));
 
-    for (i = 0; i < size; i++) {
-        tag = *in++;
+        AvALLOC(av) = AvARRAY(av) = ary;
+        AvFILLp(av) = AvMAX(av) = size - 1;
 
-        Perl_av_store(aTHX_ av, i, DISPATCH);
+        SV **end = ary + size;
+
+        while (ary != end) {
+            tag = *in++;
+            *ary++ = DISPATCH;
+        }
     }
 
     return Perl_newRV_noinc(aTHX_ (SV*) av);

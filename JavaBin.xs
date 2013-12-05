@@ -72,7 +72,7 @@ uint32_t variable_int(void) {
     uint32_t result = (tag = *in++) & 127;
 
     for (shift = 7; tag & 128; shift += 7)
-        result |= ((uint32_t)((tag = *in++) & 127)) << shift;
+        result |= ((tag = *in++) & 127) << shift;
 
     return result;
 }
@@ -80,7 +80,7 @@ uint32_t variable_int(void) {
 uint32_t read_size(void) {
     uint32_t size = tag & 31;
 
-    if ( size == 31 )
+    if (size == 31)
         size += variable_int();
 
     return size;
@@ -107,7 +107,7 @@ SV* read_bool_false(pTHX) {
 SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *in++); }
 
 SV* read_short(pTHX) {
-    int16_t s = (int16_t) ((in[0] << 8) | in[1]);
+    int16_t s = in[0] << 8 | in[1];
 
     in += 2;
 
@@ -118,14 +118,14 @@ SV* read_short(pTHX) {
 // Read 8 bytes, cast to double, return. For long double perls
 // more magic is used, see read_float for more details.
 SV* read_double(pTHX) {
-    uint64_t i = ((uint64_t) in[0] << 56) |
-                 ((uint64_t) in[1] << 48) |
-                 ((uint64_t) in[2] << 40) |
-                 ((uint64_t) in[3] << 32) |
-                 ((uint64_t) in[4] << 24) |
-                 ((uint64_t) in[5] << 16) |
-                 ((uint64_t) in[6] << 8 ) |
-                 ((uint64_t) in[7]);
+    uint64_t i = (uint64_t) in[0] << 56 |
+                 (uint64_t) in[1] << 48 |
+                 (uint64_t) in[2] << 40 |
+                 (uint64_t) in[3] << 32 |
+                 (uint64_t) in[4] << 24 |
+                 (uint64_t) in[5] << 16 |
+                 (uint64_t) in[6] << 8  |
+                 (uint64_t) in[7];
 
     in += 8;
 
@@ -145,7 +145,7 @@ SV* read_double(pTHX) {
 }
 
 SV* read_int(pTHX) {
-    int32_t i = (int32_t) ((in[0] << 24) | (in[1] << 16) | (in[2] << 8) | in[3]);
+    int32_t i = in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3];
 
     in += 4;
 
@@ -153,14 +153,14 @@ SV* read_int(pTHX) {
 }
 
 SV* read_long(pTHX) {
-    int64_t l = ((uint64_t) in[0] << 56) |
-                ((uint64_t) in[1] << 48) |
-                ((uint64_t) in[2] << 40) |
-                ((uint64_t) in[3] << 32) |
-                ((uint64_t) in[4] << 24) |
-                ((uint64_t) in[5] << 16) |
-                ((uint64_t) in[6] << 8 ) |
-                ((uint64_t) in[7]);
+    int64_t l = (uint64_t) in[0] << 56 |
+                (uint64_t) in[1] << 48 |
+                (uint64_t) in[2] << 40 |
+                (uint64_t) in[3] << 32 |
+                (uint64_t) in[4] << 24 |
+                (uint64_t) in[5] << 16 |
+                (uint64_t) in[6] << 8  |
+                (uint64_t) in[7];
 
     in += 8;
 
@@ -172,7 +172,7 @@ SV* read_long(pTHX) {
 // correct endian order. Re-read these bits as a float, stringify this float,
 // then finally numify the string into a double or long double.
 SV* read_float(pTHX) {
-    uint32_t i = ((in[0] << 24) | (in[1] << 16) | (in[2] << 8) | in[3]);
+    uint32_t i = in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3];
 
     in += 4;
 
@@ -192,14 +192,14 @@ SV* read_float(pTHX) {
 }
 
 SV* read_date(pTHX) {
-    int64_t date_ms = ((uint64_t) in[0] << 56) |
-                      ((uint64_t) in[1] << 48) |
-                      ((uint64_t) in[2] << 40) |
-                      ((uint64_t) in[3] << 32) |
-                      ((uint64_t) in[4] << 24) |
-                      ((uint64_t) in[5] << 16) |
-                      ((uint64_t) in[6] << 8 ) |
-                      ((uint64_t) in[7]);
+    int64_t date_ms = (uint64_t) in[0] << 56 |
+                      (uint64_t) in[1] << 48 |
+                      (uint64_t) in[2] << 40 |
+                      (uint64_t) in[3] << 32 |
+                      (uint64_t) in[4] << 24 |
+                      (uint64_t) in[5] << 16 |
+                      (uint64_t) in[6] << 8  |
+                      (uint64_t) in[7];
 
     in += 8;
 
@@ -275,8 +275,7 @@ SV* read_solr_doc_list(pTHX) {
     Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("start"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
 
     // Assume maxScore is either a float or undef.
-    tag = *in++;
-    Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("maxScore"), 0, HV_FETCH_ISSTORE, tag ? read_float(aTHX) : &PL_sv_undef, 0);
+    Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("maxScore"), 0, HV_FETCH_ISSTORE, *in++ ? read_float(aTHX) : &PL_sv_undef, 0);
 
     // Assume docs are an array.
     tag = *in++;
@@ -338,7 +337,7 @@ SV* read_small_long(pTHX) {
     if (tag & 16) {
         uint8_t shift = 4;
 
-        do result |= ((uint64_t)((tag = *in++) & 127)) << shift;
+        do result |= ((tag = *in++) & 127) << shift;
         while (tag & 128 && (shift += 7));
     }
 
@@ -367,12 +366,12 @@ SV* read_array(pTHX) {
 void write_v_int(uint32_t i) {
     // FIXME
     while ((i & ~0x7F) != 0) {
-        *out++ = (uint8_t) ((i & 0x7f) | 0x80);
+        *out++ = (i & 0x7f) | 0x80;
 
         //i >>>= 7;
     }
 
-    *out++ = (uint8_t) i;
+    *out++ = i;
 }
 
 void write_shifted_tag(uint8_t tag, uint32_t len) {

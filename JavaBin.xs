@@ -447,8 +447,16 @@ void write_sv(pTHX_ SV *sv) {
             Perl_croak(aTHX_ "Invalid to_javabin input: regex");
         case SVt_PVGV:
             Perl_croak(aTHX_ "Invalid to_javabin input: glob");
-        case SVt_PVAV:
-            fprintf(stderr, "arrayref\n");
+        case SVt_PVAV: {
+            uint32_t size = AvFILL(sv) + 1;
+
+            write_shifted_tag(128, size);
+
+            SV **ary = AvARRAY(sv), **end = ary + size;
+
+            while (ary != end)
+                write_sv(aTHX_ *ary++);
+
             break;
         case SVt_PVHV:
             fprintf(stderr, "hashref\n");

@@ -458,6 +458,7 @@ void write_sv(pTHX_ SV *sv) {
                 write_sv(aTHX_ *ary++);
 
             break;
+        }
         case SVt_PVHV:
             fprintf(stderr, "hashref\n");
             break;

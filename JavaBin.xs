@@ -5,6 +5,9 @@
 
 #define DISPATCH tag >> 5 ? dispatch_shift[tag >> 5](aTHX) : dispatch[tag](aTHX)
 
+typedef union { uint64_t i; double d; } int_to_double;
+typedef union { uint32_t i; float  f; } int_to_float;
+
 // TODO non fixed cache size?
 uint8_t *cache_keys[100], cache_pos, *in, *out, tag;
 uint32_t cache_sizes[100];
@@ -118,21 +121,21 @@ SV* read_short(pTHX) {
 // Read 8 bytes, cast to double, return. For long double perls
 // more magic is used, see read_float for more details.
 SV* read_double(pTHX) {
-    uint64_t i = (uint64_t) in[0] << 56 |
-                 (uint64_t) in[1] << 48 |
-                 (uint64_t) in[2] << 40 |
-                 (uint64_t) in[3] << 32 |
-                 (uint64_t) in[4] << 24 |
-                 (uint64_t) in[5] << 16 |
-                 (uint64_t) in[6] << 8  |
-                 (uint64_t) in[7];
+    int_to_double u = { (uint64_t) in[0] << 56 |
+                        (uint64_t) in[1] << 48 |
+                        (uint64_t) in[2] << 40 |
+                        (uint64_t) in[3] << 32 |
+                        (uint64_t) in[4] << 24 |
+                        (uint64_t) in[5] << 16 |
+                        (uint64_t) in[6] << 8  |
+                        (uint64_t) in[7] };
 
     in += 8;
 
 #ifdef USE_LONG_DOUBLE
     char *str;
 
-    asprintf(&str, "%.14f", *(double*)&i);
+    asprintf(&str, "%.14f", u.d);
 
     long double d = strtold(str, NULL);
 
@@ -140,7 +143,7 @@ SV* read_double(pTHX) {
 
     return Perl_newSVnv(aTHX_ d);
 #else
-    return Perl_newSVnv(aTHX_ *(double*)&i);
+    return Perl_newSVnv(aTHX_ u.d);
 #endif
 }
 
@@ -172,13 +175,13 @@ SV* read_long(pTHX) {
 // correct endian order. Re-read these bits as a float, stringify this float,
 // then finally numify the string into a double or long double.
 SV* read_float(pTHX) {
-    uint32_t i = in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3];
+    int_to_float u = { in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3] };
 
     in += 4;
 
     char *str;
 
-    asprintf(&str, "%f", *(float*)&i);
+    asprintf(&str, "%f", u.f);
 
 #ifdef USE_LONG_DOUBLE
     long double d = strtold(str, NULL);

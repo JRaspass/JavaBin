@@ -223,9 +223,9 @@ SV* read_date(pTHX) {
 SV* read_map(pTHX) {
     HV *hv = newHV();
 
-    uint32_t i, key_size, size = tag >> 5 ? read_size() : variable_int();
+    uint32_t key_size, size = tag >> 5 ? read_size() : variable_int();
 
-    for (i = 0; i < size; i++) {
+    while (size--) {
         uint8_t *key;
 
         tag = *in++;

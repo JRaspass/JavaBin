@@ -462,9 +462,31 @@ void write_sv(pTHX_ SV *sv) {
 
             break;
         }
-        case SVt_PVHV:
-            fprintf(stderr, "hashref\n");
+        case SVt_PVHV: {
+            *out++ = 10;
+
+            write_v_int(HvFILL(sv));
+
+            HE *entry;
+            uint32_t len;
+
+            while ((entry = Perl_hv_iternext_flags(aTHX_ (HV*) sv, 0))) {
+                //TODO Implement the cached map key feature, reduces bin size.
+                *out++ = 0;
+
+                len = HeKLEN(entry);
+
+                write_shifted_tag(32, len);
+
+                memcpy(out, HeKEY(entry), len);
+
+                out += len;
+
+                write_sv(aTHX_ HeVAL(entry));
+            }
+
             break;
+        }
         case SVt_PVCV:
             Perl_croak(aTHX_ "Invalid to_javabin input: sub ref");
         default:

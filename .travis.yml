@@ -1,5 +1,7 @@
 after_success: cover -report coveralls -test
+compiler: gcc
 install: cpanm -nq Devel::Cover::Report::Coveralls
+language: perl
 matrix:
     include:
         - perl: "5.19"
@@ -12,6 +14,7 @@ perl:
     - "5.14"
     - "5.12"
 script:
+    - env
     - echo $CC
     - ls -l $(which cc)
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1

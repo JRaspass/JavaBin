@@ -12,6 +12,7 @@ perl:
     - "5.14"
     - "5.12"
 script:
+    - which clang
     - ls -l /usr/bin/cc
     - sudo ln -fs $CC /usr/bin/cc
     - ls -l /usr/bin/cc

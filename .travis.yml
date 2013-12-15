@@ -1,26 +1,20 @@
 after_success: cover -report coveralls -test
 compiler: gcc
+env:
+    - CC=/usr/bin/clang
+    - CC=/usr/bin/gcc
 install: cpanm -nq Devel::Cover::Report::Coveralls
 language: perl
-matrix:
-    include:
-        - compiler: clang
-          perl: "5.19"
-        - compiler: gcc
-          perl: "5.19"
-        - compiler: gcc
-          perl: "5.18"
-        - compiler: gcc
-          perl: "5.16"
-        - compiler: gcc
-          perl: "5.14"
-        - compiler: gcc
-          perl: "5.12"
+perl:
+    - "5.19"
+    - "5.18"
+    - "5.16"
+    - "5.14"
+    - "5.12"
 script:
-    - echo $CC
-    - ls -l $(which cc)
-    - ls -l /etc/alternatives/cc
-    - "sudo ln -fs $(which $(perl -e '$ENV{TRAVIS_JOB_NUMER} =~ /\\.1$/ ? q/clang/ : q/gcc/')) $(which cc)"
+    - ls -l /usr/bin/cc
+    - sudo ln -fs $CC /usr/bin/cc
+    - ls -l /usr/bin/cc
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1
     - make
     - prove -bl

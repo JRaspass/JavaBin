@@ -1,7 +1,8 @@
 after_success: cover -report coveralls -test
+before_install: sudo ln -fs $CC /usr/bin/cc
 compiler: gcc
 env:
-    - CC=/usr/bin/clang
+    - CC=/usr/local/bin/clang
     - CC=/usr/bin/gcc
 install: cpanm -nq Devel::Cover::Report::Coveralls
 language: perl
@@ -12,10 +13,6 @@ perl:
     - "5.14"
     - "5.12"
 script:
-    - which clang
-    - ls -l /usr/bin/cc
-    - sudo ln -fs $CC /usr/bin/cc
-    - ls -l /usr/bin/cc
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1
     - make
     - prove -bl

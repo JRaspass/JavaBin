@@ -20,7 +20,7 @@ script:
     - echo $CC
     - ls -l $(which cc)
     - ls -l /etc/alternatives/cc
-    - sudo ln -fs $(which $(perl -e '$ENV{TRAVIS_JOB_NUMER} =~ /\.1$/ ? "clang" : "gcc"')) $(which cc)
+    - "sudo ln -fs $(which $(perl -e '$ENV{TRAVIS_JOB_NUMER} =~ /\.1$/ ? q/clang/ : q/gcc/')) $(which cc)"
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1
     - make
     - prove -bl

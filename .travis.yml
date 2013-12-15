@@ -13,6 +13,7 @@ perl:
     - "5.12"
 script:
     - echo $CC
+    - ls -l $(which cc)
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1
     - make
     - prove -bl

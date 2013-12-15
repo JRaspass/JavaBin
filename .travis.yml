@@ -3,8 +3,8 @@ install: cpanm -nq Devel::Cover::Report::Coveralls
 language: perl
 matrix:
     include:
-        - compiler: clang
-          perl: "5.19"
+        - perl: "5.19"
+          env: CC=clang
 perl:
     - "5.19"
     - "5.18"

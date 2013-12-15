@@ -1,9 +1,10 @@
 after_success: cover -report coveralls -test
-compiler:
-    - clang
-    - gcc
 install: cpanm -nq Devel::Cover::Report::Coveralls
 language: perl
+matrix:
+    include:
+        - compiler: clang
+          perl: "5.19"
 perl:
     - "5.19"
     - "5.18"
@@ -11,6 +12,7 @@ perl:
     - "5.14"
     - "5.12"
 script:
+    - echo $CC
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1
     - make
     - prove -bl

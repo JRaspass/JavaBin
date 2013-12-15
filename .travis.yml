@@ -4,7 +4,7 @@ language: perl
 matrix:
     include:
         - perl: "5.19"
-          env: CC=clang
+          env: PERL_MM_OPT=CC=clang
 perl:
     - "5.19"
     - "5.18"
@@ -12,8 +12,6 @@ perl:
     - "5.14"
     - "5.12"
 script:
-    - echo $CC
-    - ls -l $(which cc)
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1
     - make
     - prove -bl

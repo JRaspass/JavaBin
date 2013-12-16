@@ -494,67 +494,74 @@ void write_sv(pTHX_ SV *sv) {
     }
 }
 
-MODULE = JavaBin PACKAGE = JavaBin
-VERSIONCHECK: DISABLE
+void from_javabin(pTHX_ CV *cv) {
+    PERL_UNUSED_VAR(cv);
 
-void true()
-PPCODE:
-    ST(0) = Perl_sv_2mortal(aTHX_ read_bool_true(aTHX));
+    SV **sp = PL_stack_base + *PL_markstack_ptr-- + 1;
 
-    XSRETURN(1);
-
-void false()
-PPCODE:
-    ST(0) = Perl_sv_2mortal(aTHX_ read_bool_false(aTHX));
-
-    XSRETURN(1);
-
-void from_javabin(...)
-PPCODE:
-    if (!items) return;
+    if (sp > PL_stack_sp)
+        return;
 
     // Zero the cache.
     // TODO zero more than just the cache index?
     cache_pos = 0;
 
-    if (SvCUR(ST(0)) < 2)
+    if (SvCUR(*sp) < 2)
         Perl_croak(aTHX_ "Invalid from_javabin input: insufficient length");
 
-    in = (uint8_t *) SvPVX(ST(0));
+    in = (uint8_t *) SvPVX(*sp);
 
     if (*in++ != 2)
         Perl_croak(aTHX_ "Invalid from_javabin input: expected version 2");
 
     tag = *in++;
 
-    ST(0) = Perl_sv_2mortal(aTHX_ DISPATCH);
+    *sp = Perl_sv_2mortal(aTHX_ DISPATCH);
 
-    XSRETURN(1);
+    PL_stack_sp = sp;
+}
 
-void to_javabin(...)
-PPCODE:
-    if (!items) return;
+void to_javabin(pTHX_ CV *cv) {
+    PERL_UNUSED_VAR(cv);
+
+    SV **sp = PL_stack_base + *PL_markstack_ptr-- + 1;
+
+    if (sp > PL_stack_sp)
+        return;
 
     //FIXME obviously
     uint8_t *out_start = out = malloc(1000);
 
     *out++ = '\2';
 
-    write_sv(aTHX_ ST(0));
+    write_sv(aTHX_ *sp);
 
-    ST(0) = Perl_newSVpvn_flags(aTHX_ (char *)out_start, out - out_start, 0);
+    *sp = Perl_newSVpvn_flags(aTHX_ (char *)out_start, out - out_start, 0);
 
     free(out_start);
 
-    XSRETURN(1);
+    PL_stack_sp = sp;
+}
 
-MODULE = JavaBin PACKAGE = JavaBin::Bool
-PROTOTYPES: DISABLE
-FALLBACK: TRUE
+void bool_overload(pTHX_ CV *cv) {
+    PERL_UNUSED_VAR(cv);
 
-void overload(...)
-OVERLOAD: 0+ \"\"
-PPCODE:
-    ST(0) = SvRV(ST(0));
+    PL_stack_sp = PL_stack_base + *PL_markstack_ptr-- + 1;
 
-    XSRETURN(1);
+    *PL_stack_sp = SvRV(*PL_stack_sp);
+}
+
+void boot(pTHX_ CV *cv) {
+    PERL_UNUSED_VAR(cv);
+
+    const char* file = __FILE__;
+
+    Perl_newXS_len_flags(aTHX_ STR_WITH_LEN("JavaBin::from_javabin"), from_javabin, file, NULL, NULL, 0);
+    Perl_newXS_len_flags(aTHX_ STR_WITH_LEN("JavaBin::to_javabin"), to_javabin, file, NULL, NULL, 0);
+
+    Perl_newXS_len_flags(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), bool_overload, file, NULL, NULL, 0);
+    Perl_newXS_len_flags(aTHX_ STR_WITH_LEN("JavaBin::Bool::(0+"), bool_overload, file, NULL, NULL, 0);
+    Perl_newXS_len_flags(aTHX_ STR_WITH_LEN("JavaBin::Bool::(\"\""), bool_overload, file, NULL, NULL, 0);
+
+    Perl_sv_setsv_flags(aTHX_ Perl_get_sv(aTHX_ "JavaBin::Bool::()", GV_ADD), &PL_sv_yes, 0);
+}

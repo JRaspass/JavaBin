@@ -3,9 +3,15 @@ package JavaBin 0.7;
 
 require DynaLoader;
 
-DynaLoader::bootstrap('JavaBin');
-
-sub dl_load_flags { 0 }
+DynaLoader::dl_install_xsub(
+    undef,
+    DynaLoader::dl_find_symbol(
+        DynaLoader::dl_load_file(
+            scalar DynaLoader::dl_findfile( map("-L$_/auto/JavaBin", @INC), 'JavaBin')
+        ),
+        'boot'
+    )
+)->();
 
 sub import {
     shift;

@@ -551,17 +551,27 @@ void bool_overload(pTHX_ CV *cv) {
     *PL_stack_sp = SvRV(*PL_stack_sp);
 }
 
+void sub(pTHX_ char *name, STRLEN len, XSUBADDR_t addr) {
+    CV *cv = (CV*)Perl_newSV_type(aTHX_ SVt_PVCV);
+    GV *gv = Perl_gv_fetchpvn_flags(aTHX_ name, len, GV_ADDMULTI, SVt_PVCV);
+
+    CvISXSUB_on(cv);
+    CvXSUB(cv) = addr;
+
+    CvGV_set(cv, gv);
+    GvCV_set(gv, cv);
+
+    HvAMAGIC_on(GvSTASH(gv));
+}
+
 void boot(pTHX_ CV *cv) {
     PERL_UNUSED_VAR(cv);
 
-    const char* file = __FILE__;
-
-    Perl_newXS_len_flags(aTHX_ STR_WITH_LEN("JavaBin::from_javabin"), from_javabin, file, NULL, NULL, 0);
-    Perl_newXS_len_flags(aTHX_ STR_WITH_LEN("JavaBin::to_javabin"), to_javabin, file, NULL, NULL, 0);
-
-    Perl_newXS_len_flags(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), bool_overload, file, NULL, NULL, 0);
-    Perl_newXS_len_flags(aTHX_ STR_WITH_LEN("JavaBin::Bool::(0+"), bool_overload, file, NULL, NULL, 0);
-    Perl_newXS_len_flags(aTHX_ STR_WITH_LEN("JavaBin::Bool::(\"\""), bool_overload, file, NULL, NULL, 0);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::from_javabin"), from_javabin);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::to_javabin"), to_javabin);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), bool_overload);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(0+"), bool_overload);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(\"\""), bool_overload);
 
     Perl_sv_setsv_flags(aTHX_ Perl_get_sv(aTHX_ "JavaBin::Bool::()", GV_ADD), &PL_sv_yes, 0);
 }

@@ -561,7 +561,7 @@ void sub(pTHX_ char *name, STRLEN len, XSUBADDR_t addr) {
     CvGV_set(cv, gv);
     GvCV_set(gv, cv);
 
-    HvAMAGIC_on(GvSTASH(gv));
+    SvFLAGS(GvSTASH(gv)) |= SVf_AMAGIC;
 }
 
 void boot(pTHX_ CV *cv) {

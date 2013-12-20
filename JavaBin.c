@@ -133,15 +133,11 @@ SV* read_double(pTHX) {
     in += 8;
 
 #ifdef USE_LONG_DOUBLE
-    char *str;
+    char *str = alloca(snprintf(NULL, 0, "%.14f", u.d));
 
-    asprintf(&str, "%.14f", u.d);
+    sprintf(str, "%.14f", u.d);
 
-    long double d = strtold(str, NULL);
-
-    free(str);
-
-    return Perl_newSVnv(aTHX_ d);
+    return Perl_newSVnv(aTHX_ strtold(str, NULL));
 #else
     return Perl_newSVnv(aTHX_ u.d);
 #endif
@@ -179,17 +175,15 @@ SV* read_float(pTHX) {
 
     in += 4;
 
-    char *str;
+    char *str = alloca(snprintf(NULL, 0, "%f", u.f));
 
-    asprintf(&str, "%f", u.f);
+    sprintf(str, "%f", u.f);
 
 #ifdef USE_LONG_DOUBLE
     long double d = strtold(str, NULL);
 #else
     double d = strtod(str, NULL);
 #endif
-
-    free(str);
 
     return Perl_newSVnv(aTHX_ d);
 }
@@ -558,8 +552,8 @@ void sub(pTHX_ char *name, STRLEN len, XSUBADDR_t addr) {
     CvISXSUB_on(cv);
     CvXSUB(cv) = addr;
 
-    CvGV_set(cv, gv);
     GvCV_set(gv, cv);
+    Perl_cvgv_set(aTHX_ cv, gv);
 
     SvFLAGS(GvSTASH(gv)) |= SVf_AMAGIC;
 }

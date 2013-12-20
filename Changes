@@ -1,8 +1,10 @@
 0.7 ???
-    - Bump minimum Perl version to 5.12.
+    - Bump minimum Perl version to 5.14, this keeps the code sane.
     - Croak on insufficient length.
     - Croak on invalid JavaBin version. Only accept version 2.
     - Fix loss of precision with floats on -Duselongdouble perls.
+    - Implement the from_javabin function.
+    - Provide example benchmarks of alternatives.
 
 0.6 2013-11-12
     - Fix test failures by avoiding using UTF-8 filenames.

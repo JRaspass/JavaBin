@@ -1,6 +1,6 @@
 #!/bin/env perl
 
-use v5.12;
+use 5.014;
 use strict;
 
 use Benchmark::Forking 'cmpthese';

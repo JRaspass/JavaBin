@@ -12,6 +12,9 @@ typedef union { uint32_t i; float  f; } int_to_float;
 uint8_t *cache_keys[100], cache_pos, *in, *out, tag;
 uint32_t cache_sizes[100];
 
+// Computed at boot hash keys.
+uint32_t docs, maxScore, numFound, start;
+
 SV* read_undef(pTHX);
 SV* read_bool_true(pTHX);
 SV* read_bool_false(pTHX);
@@ -265,18 +268,18 @@ SV* read_solr_doc_list(pTHX) {
 
     // Assume numFound is a small long.
     tag = *in++;
-    Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("numFound"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
+    Perl_hv_common(aTHX_ hv, NULL, "numFound", 8, 0, HV_FETCH_ISSTORE, read_small_long(aTHX), numFound);
 
     // Assume start is a small long.
     tag = *in++;
-    Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("start"), 0, HV_FETCH_ISSTORE, read_small_long(aTHX), 0);
+    Perl_hv_common(aTHX_ hv, NULL, "start", 5, 0, HV_FETCH_ISSTORE, read_small_long(aTHX), start);
 
     // Assume maxScore is either a float or undef.
-    Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("maxScore"), 0, HV_FETCH_ISSTORE, *in++ ? read_float(aTHX) : &PL_sv_undef, 0);
+    Perl_hv_common(aTHX_ hv, NULL, "maxScore", 8, 0, HV_FETCH_ISSTORE, *in++ ? read_float(aTHX) : &PL_sv_undef, maxScore);
 
     // Assume docs are an array.
     tag = *in++;
-    Perl_hv_common(aTHX_ hv, NULL, STR_WITH_LEN("docs"), 0, HV_FETCH_ISSTORE, read_array(aTHX), 0);
+    Perl_hv_common(aTHX_ hv, NULL, "docs", 4, 0, HV_FETCH_ISSTORE, read_array(aTHX), docs);
 
     return Perl_newRV_noinc(aTHX_ (SV*) hv);
 }
@@ -568,4 +571,10 @@ void boot(pTHX_ CV *cv) {
     sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(\"\""), bool_overload);
 
     Perl_sv_setsv_flags(aTHX_ Perl_get_sv(aTHX_ "JavaBin::Bool::()", GV_ADD), &PL_sv_yes, 0);
+
+    // Precompute some hash keys.
+    PERL_HASH(docs    , "docs"    , 4);
+    PERL_HASH(maxScore, "maxScore", 8);
+    PERL_HASH(numFound, "numFound", 8);
+    PERL_HASH(start   , "start"   , 5);
 }

@@ -1,5 +1,7 @@
 after_success: "[ $CC == /usr/bin/gcc ] && cover -report coveralls -test"
-before_install: sudo ln -fs $CC /usr/bin/cc
+before_install:
+    - sudo ln -fs $CC /usr/bin/cc
+    - cc --version
 env:
     - CC=/usr/local/bin/clang
     - CC=/usr/bin/gcc

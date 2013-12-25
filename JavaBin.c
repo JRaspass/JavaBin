@@ -364,11 +364,10 @@ SV* read_array(pTHX) {
 }
 
 void write_v_int(uint32_t i) {
-    // FIXME
-    while ((i & ~0x7F) != 0) {
-        *out++ = (i & 0x7f) | 0x80;
+    while (i & ~127) {
+        *out++ = (i & 127) | 128;
 
-        //i >>>= 7;
+        i >>= 7;
     }
 
     *out++ = i;

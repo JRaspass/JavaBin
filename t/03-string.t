@@ -13,6 +13,7 @@ for (
     "☃",
     "Grüßen",
     'The quick brown fox jumped over the lazy dog',
+    'Access to computers—and anything which might teach you something about the way the world works—should be unlimited and total. Always yield to the Hands-On Imperative!',
 ) {
     utf8::encode my $bytes = $_;
 
@@ -24,7 +25,17 @@ for (
             $expected .= chr( 32 | $len );
         }
         else {
-            $expected .= chr( 32 | 31 ) . chr $len - 31;
+            $expected .= chr( 32 | 31 );
+
+            $len -= 31;
+
+            while ($len & ~127) {
+                $expected .= chr( ($len & 127) | 128 );
+
+                $len = $len >> 7;
+            }
+
+            $expected .= chr $len;
         }
 
         $expected .= $bytes;

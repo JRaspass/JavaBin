@@ -247,7 +247,7 @@ SV* read_map(pTHX) {
 
         tag = *in++;
 
-        Perl_hv_common(aTHX_ hv, NULL, (char *)key, key_size, 0, HV_FETCH_ISSTORE, DISPATCH, 0);
+        Perl_hv_common(aTHX_ hv, NULL, (char *)key, key_size, HVhek_UTF8, HV_FETCH_ISSTORE, DISPATCH, 0);
     }
 
     return Perl_newRV_noinc(aTHX_ (SV*) hv);
@@ -465,13 +465,12 @@ void write_sv(pTHX_ SV *sv) {
             write_v_int(HvFILL(sv));
 
             HE *entry;
-            uint32_t len;
 
             while ((entry = Perl_hv_iternext_flags(aTHX_ (HV*) sv, 0))) {
                 //TODO Implement the cached map key feature, reduces bin size.
                 *out++ = 0;
 
-                len = HeKLEN(entry);
+                uint32_t len = HeKLEN(entry);
 
                 write_shifted_tag(32, len);
 

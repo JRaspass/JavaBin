@@ -435,6 +435,17 @@ void write_sv(pTHX_ SV *sv) {
         case SVt_PVIV: {
             int64_t i = SvIV(sv);
 
+            if (ref) {
+                if (i == 1)
+                    *out++ = 1;
+                else if (i == 0)
+                    *out++ = 2;
+                else
+                    Perl_croak(aTHX_ "Invalid to_javabin input: int ref");
+
+                return;
+            }
+
             if (i == (int8_t) i) {
                 *out++ = 3;
                 *out++ = i;
@@ -478,6 +489,18 @@ void write_sv(pTHX_ SV *sv) {
             out += len;
 
             break;
+        case SVt_PVMG: {
+            char *class = HvAUX(
+                ((XPVMG*) SvANY(sv))->xmg_stash
+            )->xhv_name_u.xhvnameu_name->hek_key;
+
+            if (strcmp(class, "JavaBin::Bool") == 0)
+                *out++ = SvIV(sv) == 1 ? 1 : 2;
+            else
+                Perl_croak(aTHX_ "Invalid to_javabin input: object");
+
+            break;
+        }
         case SVt_REGEXP:
             Perl_croak(aTHX_ "Invalid to_javabin input: regex");
         case SVt_PVGV:
@@ -601,21 +624,20 @@ void boot(pTHX_ CV *cv) {
     sub(aTHX_ STR_WITH_LEN("JavaBin::from_javabin"), from_javabin);
     sub(aTHX_ STR_WITH_LEN("JavaBin::to_javabin"), to_javabin);
     sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), deref);
-    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(0+"), deref);
-    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(\"\""), deref);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(bool"), deref);
     sub(aTHX_ STR_WITH_LEN("JavaBin::Enum::()"), deref);
     sub(aTHX_ STR_WITH_LEN("JavaBin::Enum::(0+"), deref);
     sub(aTHX_ STR_WITH_LEN("JavaBin::Enum::(\"\""), deref);
 
     Perl_sv_setsv_flags(
         aTHX_
-        Perl_get_sv(aTHX_ "JavaBin::Bool::()", GV_ADD),
+        GvSV(Perl_gv_fetchpvn_flags(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), GV_ADD, SVt_PV)),
         &PL_sv_yes,
         0
     );
     Perl_sv_setsv_flags(
         aTHX_
-        Perl_get_sv(aTHX_ "JavaBin::Enum::()", GV_ADD),
+        GvSV(Perl_gv_fetchpvn_flags(aTHX_ STR_WITH_LEN("JavaBin::Enum::()"), GV_ADD, SVt_PV)),
         &PL_sv_yes,
         0
     );

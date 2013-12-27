@@ -17,9 +17,17 @@ is exception { from_javabin "\0\0" },
     "Invalid from_javabin input: expected version 2 at $0 line " . (__LINE__ - 1) . ".\n",
     'invalid version';
 
+is exception { to_javabin \2 },
+    "Invalid to_javabin input: int ref at $0 line " . (__LINE__ - 1) . ".\n",
+    'to_javabin \2';
+
 is exception { to_javabin \"" },
     "Invalid to_javabin input: string ref at $0 line " . (__LINE__ - 1) . ".\n",
     'to_javabin \""';
+
+is exception { to_javabin bless \(my $o) },
+    "Invalid to_javabin input: object at $0 line " . (__LINE__ - 1) . ".\n",
+    'to_javabin bless \(my $o)';
 
 is exception { to_javabin qr// },
     "Invalid to_javabin input: regex at $0 line " . (__LINE__ - 1) . ".\n",

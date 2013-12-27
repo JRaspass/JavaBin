@@ -29,7 +29,7 @@ is_deeply from_javabin(<$fh>), {
         enum_min           => enum(-2_147_483_648, 'min'),
         enum_snowman       => enum(123, '☃'),
         enum_zero          => enum(0, 'zero'),
-        false              => 0,
+        false              => do { bless \(my $o = 0), 'JavaBin::Bool' },
         hash_map           => {qw/foo bar baz qux/},
         iterator           => [qw/foo bar baz qux/],
         named_list         => {qw/foo bar baz qux/},
@@ -43,7 +43,7 @@ is_deeply from_javabin(<$fh>), {
         simple_ordered_map => {qw/foo bar baz qux/},
         snowman            => '☃',
         str_arr            => [qw/foo bar baz qux/],
-        true               => 1,
+        true               => do { bless \(my $o = 1), 'JavaBin::Bool' },
     }],
 };
 

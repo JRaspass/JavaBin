@@ -607,7 +607,7 @@ void deref(pTHX_ CV *cv) {
 
 void sub(pTHX_ char *name, STRLEN len, XSUBADDR_t addr) {
     CV *cv = (CV*)Perl_newSV_type(aTHX_ SVt_PVCV);
-    GV *gv = Perl_gv_fetchpvn_flags(aTHX_ name, len, GV_ADDMULTI, SVt_PVCV);
+    GV *gv = Perl_gv_fetchpvn_flags(aTHX_ name, len, GV_ADD, SVt_PVCV);
 
     CvISXSUB_on(cv);
     CvXSUB(cv) = addr;

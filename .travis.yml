@@ -5,7 +5,7 @@ before_install:
 env:
     - CC=/usr/local/bin/clang
     - CC=/usr/bin/gcc
-install: cpanm -nq Devel::Cover::Report::Coveralls
+install: "[ $CC == /usr/bin/gcc ] && cpanm -nq Devel::Cover::Report::Coveralls"
 language: perl
 perl:
     - "5.19"

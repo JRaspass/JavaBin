@@ -16,8 +16,7 @@ uint32_t cache_sizes[100];
 uint32_t docs, maxScore, numFound, start;
 
 SV* read_undef(pTHX);
-SV* read_bool_true(pTHX);
-SV* read_bool_false(pTHX);
+SV* read_bool(pTHX);
 SV* read_byte(pTHX);
 SV* read_short(pTHX);
 SV* read_double(pTHX);
@@ -38,8 +37,8 @@ SV* read_array(pTHX);
 
 SV *(*dispatch[19])(pTHX) = {
     read_undef,
-    read_bool_true,
-    read_bool_false,
+    read_bool,
+    read_bool,
     read_byte,
     read_short,
     read_double,
@@ -99,20 +98,24 @@ uint32_t read_size(void) {
 
 SV* read_undef(pTHX) { return &PL_sv_undef; }
 
-SV* read_bool_true(pTHX) {
-    return Perl_sv_bless(
-        aTHX_
-        Perl_newRV_noinc(aTHX_ Perl_newSVuv(aTHX_ 1)),
-        Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0)
-    );
-}
+SV* read_bool(pTHX) {
+    SV *sv = Perl_newSVuv(aTHX_ tag == 1);
 
-SV* read_bool_false(pTHX) {
-    return Perl_sv_bless(
-        aTHX_
-        Perl_newRV_noinc(aTHX_ Perl_newSVuv(aTHX_ 0)),
-        Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0)
-    );
+    Perl_sv_upgrade(aTHX_ sv, SVt_PVMG);
+
+    SvOBJECT_on(sv);
+
+    HV *stash = Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0);
+
+    SvREFCNT(stash)++;
+    SvSTASH_set(sv, stash);
+
+    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+    SvROK_on(rv);
+    SvRV_set(rv, sv);
+
+    return rv;
 }
 
 SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *in++); }
@@ -255,7 +258,12 @@ SV* read_map(pTHX) {
         Perl_hv_common(aTHX_ hv, NULL, (char *)key, key_size, HVhek_UTF8, HV_FETCH_ISSTORE, DISPATCH, 0);
     }
 
-    return Perl_newRV_noinc(aTHX_ (SV*) hv);
+    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+    SvROK_on(rv);
+    SvRV_set(rv, (SV*)hv);
+
+    return rv;
 }
 
 SV* read_solr_doc(pTHX) {
@@ -286,7 +294,12 @@ SV* read_solr_doc_list(pTHX) {
     tag = *in++;
     Perl_hv_common(aTHX_ hv, NULL, "docs", 4, 0, HV_FETCH_ISSTORE, read_array(aTHX), docs);
 
-    return Perl_newRV_noinc(aTHX_ (SV*) hv);
+    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+    SvROK_on(rv);
+    SvRV_set(rv, (SV*)hv);
+
+    return rv;
 }
 
 SV* read_byte_array(pTHX) {
@@ -300,10 +313,15 @@ SV* read_byte_array(pTHX) {
         AvFILLp(av) = AvMAX(av) = size - 1;
 
         while (ary != end)
-            *ary++ = newSViv((int8_t) *in++);
+            *ary++ = Perl_newSViv(aTHX_ (int8_t) *in++);
     }
 
-    return Perl_newRV_noinc(aTHX_ (SV*) av);
+    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+    SvROK_on(rv);
+    SvRV_set(rv, (SV*)av);
+
+    return rv;
 }
 
 SV* read_iterator(pTHX) {
@@ -313,38 +331,49 @@ SV* read_iterator(pTHX) {
     while ((tag = *in++) != 15)
         av_store(av, i++, DISPATCH);
 
-    return Perl_newRV_noinc(aTHX_ (SV*) av);
+    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+    SvROK_on(rv);
+    SvRV_set(rv, (SV*)av);
+
+    return rv;
 }
 
 SV* read_enum(pTHX) {
     tag = *in++;
 
     // small_int if +ve, int otherwise.
-    SV *e = DISPATCH;
+    SV *sv = DISPATCH;
 
-    SvUPGRADE(e, SVt_PV);
+    Perl_sv_upgrade(aTHX_ sv, SVt_PVMG);
 
     tag = *in++;
 
     uint32_t len = read_size();
 
-    char *str = SvGROW(e, len + 1);
+    char *str = Perl_sv_grow(aTHX_ sv, len + 1);
 
     memcpy(str, in, len);
 
-    str[len] = '\0';
-
-    SvCUR_set(e, len);
-    SvPOK_on(e);
-    SvUTF8_on(e);
-
     in += len;
 
-    return Perl_sv_bless(
-        aTHX_
-        Perl_newRV_noinc(aTHX_ e),
-        Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Enum"), 0)
-    );
+    str[len] = '\0';
+
+    SvCUR_set(sv, len);
+
+    SvFLAGS(sv) = SVf_IOK | SVp_IOK | SVs_OBJECT | SVf_POK | SVp_POK | SVt_PVMG | SVf_UTF8;
+
+    HV *stash = Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Enum"), 0);
+
+    SvREFCNT(stash)++;
+    SvSTASH_set(sv, stash);
+
+    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+    SvROK_on(rv);
+    SvRV_set(rv, sv);
+
+    return rv;
 }
 
 SV* read_string(pTHX) {
@@ -396,7 +425,12 @@ SV* read_array(pTHX) {
         }
     }
 
-    return Perl_newRV_noinc(aTHX_ (SV*) av);
+    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+    SvROK_on(rv);
+    SvRV_set(rv, (SV*)av);
+
+    return rv;
 }
 
 void write_v_int(uint32_t i) {

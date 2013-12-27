@@ -30,12 +30,13 @@ SV* read_solr_doc(pTHX);
 SV* read_solr_doc_list(pTHX);
 SV* read_byte_array(pTHX);
 SV* read_iterator(pTHX);
+SV* read_enum(pTHX);
 SV* read_string(pTHX);
 SV* read_small_int(pTHX);
 SV* read_small_long(pTHX);
 SV* read_array(pTHX);
 
-SV *(*dispatch[15])(pTHX) = {
+SV *(*dispatch[19])(pTHX) = {
     read_undef,
     read_bool_true,
     read_bool_false,
@@ -51,6 +52,10 @@ SV *(*dispatch[15])(pTHX) = {
     read_solr_doc_list,
     read_byte_array,
     read_iterator,
+    NULL,
+    NULL,
+    NULL,
+    read_enum,
 };
 
 // These datatypes are matched by taking the tag byte, shifting it by 5 so to only read
@@ -98,7 +103,7 @@ SV* read_bool_true(pTHX) {
     return Perl_sv_bless(
         aTHX_
         Perl_newRV_noinc(aTHX_ Perl_newSVuv(aTHX_ 1)),
-        Perl_gv_stashpv(aTHX_ "JavaBin::Bool", GV_ADD)
+        Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0)
     );
 }
 
@@ -106,7 +111,7 @@ SV* read_bool_false(pTHX) {
     return Perl_sv_bless(
         aTHX_
         Perl_newRV_noinc(aTHX_ Perl_newSVuv(aTHX_ 0)),
-        Perl_gv_stashpv(aTHX_ "JavaBin::Bool", GV_ADD)
+        Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0)
     );
 }
 
@@ -309,6 +314,37 @@ SV* read_iterator(pTHX) {
         av_store(av, i++, DISPATCH);
 
     return Perl_newRV_noinc(aTHX_ (SV*) av);
+}
+
+SV* read_enum(pTHX) {
+    tag = *in++;
+
+    // small_int if +ve, int otherwise.
+    SV *e = DISPATCH;
+
+    SvUPGRADE(e, SVt_PV);
+
+    tag = *in++;
+
+    uint32_t len = read_size();
+
+    char *str = SvGROW(e, len + 1);
+
+    memcpy(str, in, len);
+
+    str[len] = '\0';
+
+    SvCUR_set(e, len);
+    SvPOK_on(e);
+    SvUTF8_on(e);
+
+    in += len;
+
+    return Perl_sv_bless(
+        aTHX_
+        Perl_newRV_noinc(aTHX_ e),
+        Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Enum"), 0)
+    );
 }
 
 SV* read_string(pTHX) {
@@ -538,7 +574,7 @@ void to_javabin(pTHX_ CV *cv) {
     PL_stack_sp = sp;
 }
 
-void bool_overload(pTHX_ CV *cv) {
+void deref(pTHX_ CV *cv) {
     PERL_UNUSED_VAR(cv);
 
     PL_stack_sp = PL_stack_base + *PL_markstack_ptr-- + 1;
@@ -564,11 +600,25 @@ void boot(pTHX_ CV *cv) {
 
     sub(aTHX_ STR_WITH_LEN("JavaBin::from_javabin"), from_javabin);
     sub(aTHX_ STR_WITH_LEN("JavaBin::to_javabin"), to_javabin);
-    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), bool_overload);
-    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(0+"), bool_overload);
-    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(\"\""), bool_overload);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), deref);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(0+"), deref);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(\"\""), deref);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Enum::()"), deref);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Enum::(0+"), deref);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Enum::(\"\""), deref);
 
-    Perl_sv_setsv_flags(aTHX_ Perl_get_sv(aTHX_ "JavaBin::Bool::()", GV_ADD), &PL_sv_yes, 0);
+    Perl_sv_setsv_flags(
+        aTHX_
+        Perl_get_sv(aTHX_ "JavaBin::Bool::()", GV_ADD),
+        &PL_sv_yes,
+        0
+    );
+    Perl_sv_setsv_flags(
+        aTHX_
+        Perl_get_sv(aTHX_ "JavaBin::Enum::()", GV_ADD),
+        &PL_sv_yes,
+        0
+    );
 
     // Precompute some hash keys.
     PERL_HASH(docs    , "docs"    , 4);

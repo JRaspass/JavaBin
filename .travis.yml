@@ -6,11 +6,14 @@ env:
     - CC=gcc   PB_OPT=perl-5.18.1
 install:
     - sudo ln -fs $(which $CC) /usr/bin/cc
-    - nproc
-    - perlbrew install -n --noman --switch $PB_OPT
+    - perlbrew install -j$(nproc) -n --noman --switch $PB_OPT
+    - which perl
+    - perl -v
     - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls; fi"
 language: perl
 script:
+    - which perl
+    - perl -v
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1
     - make
     - prove -bl

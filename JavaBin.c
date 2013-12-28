@@ -15,8 +15,12 @@ uint32_t cache_sizes[100];
 // Computed at boot hash keys.
 uint32_t docs, maxScore, numFound, start;
 
+// Globally stored JavaBin::Bool's of true and false.
+SV *bool_true, *bool_false;
+
 SV* read_undef(pTHX);
-SV* read_bool(pTHX);
+SV* read_true(pTHX);
+SV* read_false(pTHX);
 SV* read_byte(pTHX);
 SV* read_short(pTHX);
 SV* read_double(pTHX);
@@ -37,8 +41,8 @@ SV* read_array(pTHX);
 
 SV *(*dispatch[19])(pTHX) = {
     read_undef,
-    read_bool,
-    read_bool,
+    read_true,
+    read_false,
     read_byte,
     read_short,
     read_double,
@@ -98,24 +102,22 @@ uint32_t read_size(void) {
 
 SV* read_undef(pTHX) { return &PL_sv_undef; }
 
-SV* read_bool(pTHX) {
-    SV *sv = Perl_newSVuv(aTHX_ tag == 1);
+SV* read_true(pTHX) {
+    SV *sv = Perl_newSV_type(aTHX_ SVt_IV);
 
-    Perl_sv_upgrade(aTHX_ sv, SVt_PVMG);
+    SvROK_on(sv);
+    SvRV_set(sv, bool_true);
 
-    SvOBJECT_on(sv);
+    return sv;
+}
 
-    HV *stash = Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0);
+SV* read_false(pTHX) {
+    SV *sv = Perl_newSV_type(aTHX_ SVt_IV);
 
-    SvREFCNT(stash)++;
-    SvSTASH_set(sv, stash);
+    SvROK_on(sv);
+    SvRV_set(sv, bool_false);
 
-    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
-
-    SvROK_on(rv);
-    SvRV_set(rv, sv);
-
-    return rv;
+    return sv;
 }
 
 SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *in++); }
@@ -673,6 +675,47 @@ void boot(pTHX_ CV *cv) {
         aTHX_
         GvSV(Perl_gv_fetchpvn_flags(aTHX_ STR_WITH_LEN("JavaBin::Enum::()"), GV_ADD, SVt_PV)),
         &PL_sv_yes,
+        0
+    );
+
+    // Make two bools (true and false), store them in globals.
+    HV *stash = Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0);
+    SvREFCNT(stash) += 2;
+
+    bool_true  = Perl_newSVuv(aTHX_ 1);
+    bool_false = Perl_newSVuv(aTHX_ 0);
+
+    Perl_sv_upgrade(aTHX_ bool_true,  SVt_PVMG);
+    Perl_sv_upgrade(aTHX_ bool_false, SVt_PVMG);
+
+    SvOBJECT_on(bool_true);
+    SvOBJECT_on(bool_false);
+
+    SvSTASH_set(bool_true, stash);
+    SvSTASH_set(bool_false, stash);
+
+    // Take refs to the bool and store them on the JavaBin pkg.
+    SV *sv = Perl_newSV_type(aTHX_ SVt_IV);
+
+    SvROK_on(sv);
+    SvRV_set(sv, bool_true);
+
+    Perl_sv_setsv_flags(
+        aTHX_
+        GvSV(Perl_gv_fetchpvn_flags(aTHX_ STR_WITH_LEN("JavaBin::true"), GV_ADD, SVt_PV)),
+        sv,
+        0
+    );
+
+    sv = Perl_newSV_type(aTHX_ SVt_IV);
+
+    SvROK_on(sv);
+    SvRV_set(sv, bool_false);
+
+    Perl_sv_setsv_flags(
+        aTHX_
+        GvSV(Perl_gv_fetchpvn_flags(aTHX_ STR_WITH_LEN("JavaBin::false"), GV_ADD, SVt_PV)),
+        sv,
         0
     );
 

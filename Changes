@@ -1,6 +1,6 @@
 0.7 ???
     - Avoid punctuation in test data filenames, fixes Windows.
-    - Bump minimum Perl version to 5.14, this keeps the code sane.
+    - Bump minimum Perl version to 5.18, this keeps the code sane.
     - Croak on insufficient length.
     - Croak on invalid JavaBin version. Only accept version 2.
     - Fix loss of precision with floats on -Duselongdouble perls.

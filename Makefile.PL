@@ -1,4 +1,3 @@
-use v5.12;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(

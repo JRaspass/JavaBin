@@ -1,7 +1,5 @@
-#!/bin/env perl
-
-use 5.014;
 use strict;
+use warnings;
 
 use Benchmark::Forking 'cmpthese';
 use Data::Dumper 'Dumper';
@@ -80,18 +78,18 @@ my %alts; %alts = (
     },
 );
 
-say 'Encode';
+print "Encode\n";
 
 cmpthese -1, { map { $_ => $alts{$_}{to} } keys %alts };
 
-say "\nSize\n";
+print "\nSize\n\n";
 
 $_->{size} = length( $_->{data} = $_->{to}->() ) for values %alts;
 
 printf "%-13s%d bytes\n", $_, $alts{$_}{size}
     for sort { $alts{$b}{size} <=> $alts{$a}{size} } keys %alts;
 
-say "\nDecode";
+print "\nDecode\n";
 
 $sereal = Sereal::Decoder->new;
 

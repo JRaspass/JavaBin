@@ -1,16 +1,15 @@
 after_success: "[ $CC == gcc ] && cover -report coveralls -test"
 env:
-    - CC=clang
-    - CC=gcc
+    - CC=clang PB_OPT=perl-5.19.7
+    - CC=clang PB_OPT=perl-5.18.1
+    - CC=gcc   PB_OPT=perl-5.19.7
+    - CC=gcc   PB_OPT=perl-5.18.1
 install:
     - sudo ln -fs $(which $CC) /usr/bin/cc
+    - nproc
+    - perlbrew install -n --noman --switch $PB_OPT
     - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls; fi"
 language: perl
-perl:
-    - "5.19"
-    - "5.18"
-    - "5.16"
-    - "5.14"
 script:
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1
     - make

@@ -8,15 +8,10 @@ install:
     - sudo ln -fs $(which $CC) /usr/bin/cc
     - perlbrew install -j$(nproc) -n --noman $PB_OPT
     - perlbrew use `echo $PB_OPT | awk '{print $NF}'`
-    - perlbrew list
-    - which perl
-    - perl -v
+    - cpanm -nq Test::Fatal
     - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls; fi"
 language: perl
 script:
-    - perlbrew list
-    - which perl
-    - perl -v
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1
     - make
     - prove -bl

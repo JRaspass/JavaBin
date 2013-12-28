@@ -1,9 +1,13 @@
 after_success: "[ $CC == gcc ] && cover -report coveralls -test"
 env:
     - CC=clang PB_OPT=perl-5.19.7
+    - CC=clang PB_OPT='--thread perl-5.19.7'
     - CC=clang PB_OPT=perl-5.18.1
+    - CC=clang PB_OPT='--thread perl-5.18.1'
     - CC=gcc   PB_OPT=perl-5.19.7
+    - CC=gcc   PB_OPT='--thread perl-5.19.7'
     - CC=gcc   PB_OPT=perl-5.18.1
+    - CC=gcc   PB_OPT='--thread perl-5.18.1'
 install:
     - sudo ln -fs $(which $CC) /usr/bin/cc
     - perlbrew install -j$(nproc) -n --noman $PB_OPT

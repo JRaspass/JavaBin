@@ -659,9 +659,9 @@ void boot(pTHX_ CV *cv) {
 
     sub(aTHX_ STR_WITH_LEN("JavaBin::from_javabin"), from_javabin);
     sub(aTHX_ STR_WITH_LEN("JavaBin::to_javabin"), to_javabin);
-    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), deref);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), NULL);
     sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::(bool"), deref);
-    sub(aTHX_ STR_WITH_LEN("JavaBin::Enum::()"), deref);
+    sub(aTHX_ STR_WITH_LEN("JavaBin::Enum::()"), NULL);
     sub(aTHX_ STR_WITH_LEN("JavaBin::Enum::(0+"), deref);
     sub(aTHX_ STR_WITH_LEN("JavaBin::Enum::(\"\""), deref);
 

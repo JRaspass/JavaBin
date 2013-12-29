@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Benchmark::Forking 'cmpthese';
+use CBOR::XS;
 use Data::Dumper 'Dumper';
 use JavaBin;
 use JSON::XS qw/decode_json encode_json/;
@@ -52,6 +53,10 @@ my $languages = {
 my $sereal = Sereal::Encoder->new;
 
 my %alts; %alts = (
+    'CBOR::XS' => {
+        from => sub { decode_cbor $alts{'CBOR::XS'}{data} },
+        to   => sub { encode_cbor $languages },
+    },
     'Data::Dumper' => {
         from => sub { eval $alts{'Data::Dumper'}{data} },
         to   => sub { Dumper $languages },

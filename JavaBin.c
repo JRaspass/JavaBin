@@ -105,6 +105,7 @@ SV* read_undef(pTHX) { return &PL_sv_undef; }
 SV* read_true(pTHX) {
     SV *sv = Perl_newSV_type(aTHX_ SVt_IV);
 
+    SvREFCNT(bool_true)++;
     SvROK_on(sv);
     SvRV_set(sv, bool_true);
 
@@ -114,6 +115,7 @@ SV* read_true(pTHX) {
 SV* read_false(pTHX) {
     SV *sv = Perl_newSV_type(aTHX_ SVt_IV);
 
+    SvREFCNT(bool_false)++;
     SvROK_on(sv);
     SvRV_set(sv, bool_false);
 

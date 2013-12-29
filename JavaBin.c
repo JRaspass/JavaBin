@@ -693,6 +693,9 @@ void boot(pTHX_ CV *cv) {
     SvOBJECT_on(bool_true);
     SvOBJECT_on(bool_false);
 
+    SvREFCNT(bool_true)--;
+    SvREFCNT(bool_false)--;
+
     SvSTASH_set(bool_true, stash);
     SvSTASH_set(bool_false, stash);
 

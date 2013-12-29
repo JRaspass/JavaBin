@@ -589,7 +589,7 @@ void write_sv(pTHX_ SV *sv) {
 void from_javabin(pTHX_ CV *cv) {
     PERL_UNUSED_VAR(cv);
 
-    SV **sp = PL_stack_base + *PL_markstack_ptr-- + 1;
+    SV **sp = PL_stack_base + *PL_markstack_ptr + 1;
 
     if (sp > PL_stack_sp)
         return;
@@ -616,7 +616,7 @@ void from_javabin(pTHX_ CV *cv) {
 void to_javabin(pTHX_ CV *cv) {
     PERL_UNUSED_VAR(cv);
 
-    SV **sp = PL_stack_base + *PL_markstack_ptr-- + 1;
+    SV **sp = PL_stack_base + *PL_markstack_ptr + 1;
 
     if (sp > PL_stack_sp)
         return;

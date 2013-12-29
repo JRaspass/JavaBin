@@ -636,7 +636,7 @@ void to_javabin(pTHX_ CV *cv) {
 void deref(pTHX_ CV *cv) {
     PERL_UNUSED_VAR(cv);
 
-    PL_stack_sp = PL_stack_base + *PL_markstack_ptr-- + 1;
+    PL_stack_sp = PL_stack_base + *PL_markstack_ptr + 1;
 
     *PL_stack_sp = SvRV(*PL_stack_sp);
 }

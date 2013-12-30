@@ -4,6 +4,7 @@ use warnings;
 use Benchmark::Forking 'cmpthese';
 use CBOR::XS;
 use Data::Dumper 'Dumper';
+use Data::MessagePack;
 use JavaBin;
 use JSON::XS qw/decode_json encode_json/;
 use Sereal;
@@ -50,6 +51,7 @@ my $languages = {
     },
 };
 
+my $mpack  = Data::MessagePack->new;
 my $sereal = Sereal::Encoder->new;
 
 my %alts; %alts = (
@@ -60,6 +62,10 @@ my %alts; %alts = (
     'Data::Dumper' => {
         from => sub { eval $alts{'Data::Dumper'}{data} },
         to   => sub { Dumper $languages },
+    },
+    'Data::MessagePack' => {
+        from => sub { $mpack->unpack($alts{'Data::MessagePack'}{data}) },
+        to   => sub { $mpack->pack($languages) },
     },
     JavaBin => {
         from => sub { from_javabin $alts{JavaBin}{data} },
@@ -91,7 +97,7 @@ print "\nSize\n\n";
 
 $_->{size} = length( $_->{data} = $_->{to}->() ) for values %alts;
 
-printf "%-13s%d bytes\n", $_, $alts{$_}{size}
+printf "%-18s%d bytes\n", $_, $alts{$_}{size}
     for sort { $alts{$b}{size} <=> $alts{$a}{size} } keys %alts;
 
 print "\nDecode\n";

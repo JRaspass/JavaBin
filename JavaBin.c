@@ -558,24 +558,41 @@ void write_sv(pTHX_ SV *sv) {
         case SVt_PVHV: {
             *out++ = 10;
 
-            write_v_int(HvFILL(sv));
+            uint32_t len;
 
-            HE *entry;
+            if ((len = HvUSEDKEYS(sv))) {
+                write_v_int(len);
 
-            while ((entry = Perl_hv_iternext_flags(aTHX_ (HV*) sv, 0))) {
-                //TODO Implement the cached map key feature, reduces bin size.
-                *out++ = 0;
+                HE **start = HvARRAY(sv), **end = start + HvMAX(sv) + 1;
 
-                uint32_t len = HeKLEN(entry);
+                do {
+                    HE *entry;
 
-                write_shifted_tag(32, len);
+                    for (entry = *start++; entry; entry = HeNEXT(entry)) {
+                        SV *value = HeVAL(entry);
 
-                memcpy(out, HeKEY(entry), len);
+                        if (value != &PL_sv_placeholder) {
+                            //TODO Implement the cached key feature.
+                            *out++ = 0;
 
-                out += len;
+                            uint32_t klen = HeKLEN(entry);
 
-                write_sv(aTHX_ HeVAL(entry));
+                            write_shifted_tag(32, klen);
+
+                            memcpy(out, HeKEY(entry), klen);
+
+                            out += klen;
+
+                            write_sv(aTHX_ value);
+
+                            if (--len == 0)
+                                return;
+                        }
+                    }
+                } while (start != end);
             }
+            else
+                *out++ = 0;
 
             break;
         }

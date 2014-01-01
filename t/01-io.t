@@ -36,8 +36,8 @@ my %to = (
 );
 
 is exception { to_javabin $to{$_} ? $to{$_} : pos },
-    "to_javabin refuses $_ at $0 line @{[__LINE__-1]}.\n",
-    "to_javabin refuses $_"
+    "to_javabin denies $_ at $0 line @{[__LINE__-1]}.\n",
+    "to_javabin denies $_"
         for sort keys %to;
 
 done_testing;

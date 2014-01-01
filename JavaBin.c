@@ -36,26 +36,48 @@ uint32_t docs, maxScore, numFound, start;
 // Globally stored JavaBin::Bool's of true and false.
 SV *bool_true, *bool_false;
 
-SV* read_undef(pTHX);
-SV* read_true(pTHX);
-SV* read_false(pTHX);
-SV* read_byte(pTHX);
-SV* read_short(pTHX);
-SV* read_double(pTHX);
-SV* read_int(pTHX);
-SV* read_long(pTHX);
-SV* read_float(pTHX);
-SV* read_date(pTHX);
-SV* read_map(pTHX);
-SV* read_solr_doc(pTHX);
-SV* read_solr_doc_list(pTHX);
-SV* read_byte_array(pTHX);
-SV* read_iterator(pTHX);
-SV* read_enum(pTHX);
-SV* read_string(pTHX);
-SV* read_small_int(pTHX);
-SV* read_small_long(pTHX);
-SV* read_array(pTHX);
+// Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
+// http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
+static uint32_t read_v_int(void) {
+    uint8_t shift;
+    uint32_t result = (tag = *in++) & 127;
+
+    for (shift = 7; tag & 128; shift += 7)
+        result |= ((tag = *in++) & 127) << shift;
+
+    return result;
+}
+
+static uint32_t read_size(void) {
+    uint32_t size = tag & 31;
+
+    if (size == 31)
+        size += read_v_int();
+
+    return size;
+}
+
+// Functions to read the various JavaBin datatypes and return a Perl SV.
+static SV* read_undef(pTHX);
+static SV* read_true(pTHX);
+static SV* read_false(pTHX);
+static SV* read_byte(pTHX);
+static SV* read_short(pTHX);
+static SV* read_double(pTHX);
+static SV* read_int(pTHX);
+static SV* read_long(pTHX);
+static SV* read_float(pTHX);
+static SV* read_date(pTHX);
+static SV* read_map(pTHX);
+static SV* read_solr_doc(pTHX);
+static SV* read_solr_doc_list(pTHX);
+static SV* read_byte_array(pTHX);
+static SV* read_iterator(pTHX);
+static SV* read_enum(pTHX);
+static SV* read_string(pTHX);
+static SV* read_small_int(pTHX);
+static SV* read_small_long(pTHX);
+static SV* read_array(pTHX);
 
 SV *(*dispatch[19])(pTHX) = {
     read_undef,
@@ -96,27 +118,6 @@ SV *(*dispatch_shift[7])(pTHX) = {
     read_map,
     read_map,
 };
-
-// Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
-// http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
-uint32_t variable_int(void) {
-    uint8_t shift;
-    uint32_t result = (tag = *in++) & 127;
-
-    for (shift = 7; tag & 128; shift += 7)
-        result |= ((tag = *in++) & 127) << shift;
-
-    return result;
-}
-
-uint32_t read_size(void) {
-    uint32_t size = tag & 31;
-
-    if (size == 31)
-        size += variable_int();
-
-    return size;
-}
 
 SV* read_undef(pTHX) { return &PL_sv_undef; }
 
@@ -253,7 +254,7 @@ SV* read_date(pTHX) {
 SV* read_map(pTHX) {
     HV *hv = newHV();
 
-    uint32_t key_size, size = tag >> 5 ? read_size() : variable_int();
+    uint32_t key_size, size = tag >> 5 ? read_size() : read_v_int();
 
     while (size--) {
         uint8_t *key;
@@ -328,7 +329,7 @@ SV* read_byte_array(pTHX) {
     AV *av = newAV();
     uint32_t size;
 
-    if ((size = variable_int())) {
+    if ((size = read_v_int())) {
         SV **ary = safemalloc(size * sizeof(SV*)), **end = ary + size;
 
         AvALLOC(av) = AvARRAY(av) = ary;
@@ -412,7 +413,7 @@ SV* read_small_int(pTHX) {
     uint32_t result = tag & 15;
 
     if (tag & 16)
-        result |= variable_int() << 4;
+        result |= read_v_int() << 4;
 
     return Perl_newSVuv(aTHX_ result);
 }
@@ -420,7 +421,7 @@ SV* read_small_int(pTHX) {
 SV* read_small_long(pTHX) {
     uint64_t result = tag & 15;
 
-    // Inlined variable-length +ve long code, see variable_int().
+    // Inlined variable-length +ve long code, see read_v_int().
     if (tag & 16) {
         uint8_t shift = 4;
 
@@ -455,7 +456,7 @@ SV* read_array(pTHX) {
     return rv;
 }
 
-void write_v_int(uint32_t i) {
+static void write_v_int(uint32_t i) {
     while (i & ~127) {
         *out++ = (i & 127) | 128;
 
@@ -465,7 +466,7 @@ void write_v_int(uint32_t i) {
     *out++ = i;
 }
 
-void write_shifted_tag(uint8_t tag, uint32_t len) {
+static void write_shifted_tag(uint8_t tag, uint32_t len) {
     if (len < 31)
         *out++ = tag | len;
     else {
@@ -475,7 +476,7 @@ void write_shifted_tag(uint8_t tag, uint32_t len) {
     }
 }
 
-void write_sv(pTHX_ SV *sv) {
+static void write_sv(pTHX_ SV *sv) {
     bool ref = FALSE;
 
     if (SvROK(sv)) {
@@ -497,7 +498,7 @@ void write_sv(pTHX_ SV *sv) {
                 else if (i == 0)
                     *out++ = 2;
                 else
-                    Perl_croak(aTHX_ "to_javabin refuses integer reference");
+                    Perl_croak(aTHX_ "to_javabin denies integer reference");
 
                 return;
             }
@@ -535,11 +536,11 @@ void write_sv(pTHX_ SV *sv) {
         case SVt_NV:
         case SVt_PVNV:
             if (ref)
-                Perl_croak(aTHX_ "to_javabin refuses double reference");
+                Perl_croak(aTHX_ "to_javabin denies double reference");
             Perl_croak(aTHX_ "TODO: to_javabin double");
         case SVt_PV:
             if (ref)
-                Perl_croak(aTHX_ "to_javabin refuses string reference");
+                Perl_croak(aTHX_ "to_javabin denies string reference");
 
             STRLEN len = SvCUR(sv);
 
@@ -558,16 +559,16 @@ void write_sv(pTHX_ SV *sv) {
             if (strcmp(class, "JavaBin::Bool") == 0)
                 *out++ = SvIV(sv) == 1 ? 1 : 2;
             else
-                Perl_croak(aTHX_ "to_javabin refuses object");
+                Perl_croak(aTHX_ "to_javabin denies object");
 
             return;
         }
         case SVt_REGEXP:
-            Perl_croak(aTHX_ "to_javabin refuses regular expression");
+            Perl_croak(aTHX_ "to_javabin denies regular expression");
         case SVt_PVGV:
-            Perl_croak(aTHX_ "to_javabin refuses typeglob");
+            Perl_croak(aTHX_ "to_javabin denies typeglob");
         case SVt_PVLV:
-            Perl_croak(aTHX_ "to_javabin refuses lvalue");
+            Perl_croak(aTHX_ "to_javabin denies lvalue");
         case SVt_PVAV: {
             uint32_t size = AvFILL(sv) + 1;
 
@@ -622,11 +623,11 @@ void write_sv(pTHX_ SV *sv) {
             return;
         }
         case SVt_PVCV:
-            Perl_croak(aTHX_ "to_javabin refuses subroutine");
+            Perl_croak(aTHX_ "to_javabin denies subroutine");
         case SVt_PVFM:
-            Perl_croak(aTHX_ "to_javabin refuses format");
+            Perl_croak(aTHX_ "to_javabin denies format");
         case SVt_PVIO:
-            Perl_croak(aTHX_ "to_javabin refuses I/O object");
+            Perl_croak(aTHX_ "to_javabin denies I/O object");
         default:
             NOT_REACHED;
     }
@@ -691,7 +692,7 @@ void deref(pTHX_ CV *cv) {
     *PL_stack_sp = SvRV(*PL_stack_sp);
 }
 
-void sub(pTHX_ char *name, STRLEN len, XSUBADDR_t addr) {
+static void sub(pTHX_ char *name, STRLEN len, XSUBADDR_t addr) {
     CV *cv = (CV*)Perl_newSV_type(aTHX_ SVt_PVCV);
     GV *gv = Perl_gv_fetchpvn_flags(aTHX_ name, len, GV_ADD, SVt_PVCV);
 
@@ -773,8 +774,8 @@ void boot(pTHX_ CV *cv) {
     );
 
     // Precompute some hash keys.
-    PERL_HASH(docs    , "docs"    , 4);
+    PERL_HASH(docs,     "docs",     4);
     PERL_HASH(maxScore, "maxScore", 8);
     PERL_HASH(numFound, "numFound", 8);
-    PERL_HASH(start   , "start"   , 5);
+    PERL_HASH(start,    "start",    5);
 }

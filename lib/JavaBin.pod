@@ -2,6 +2,17 @@
 
 JavaBin - Apache Solr JavaBin (de)serializer
 
+=begin html
+
+<a href="https://travis-ci.org/JRaspass/JavaBin">
+    <img src="https://travis-ci.org/JRaspass/JavaBin.png" alt="Build Status"/>
+</a>
+<a href="https://coveralls.io/r/JRaspass/JavaBin">
+    <img src="https://coveralls.io/repos/JRaspass/JavaBin/badge.png" alt="Coverage Status"/>
+</a>
+
+=end html
+
 =head1 SYNOPSIS
 
  use JavaBin;

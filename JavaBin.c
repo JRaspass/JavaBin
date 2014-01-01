@@ -497,7 +497,7 @@ void write_sv(pTHX_ SV *sv) {
                 else if (i == 0)
                     *out++ = 2;
                 else
-                    Perl_croak(aTHX_ "Invalid to_javabin input: int ref");
+                    Perl_croak(aTHX_ "to_javabin refuses integer reference");
 
                 return;
             }
@@ -534,10 +534,12 @@ void write_sv(pTHX_ SV *sv) {
         }
         case SVt_NV:
         case SVt_PVNV:
-            Perl_croak(aTHX_ "TODO: to_javabin float");
+            if (ref)
+                Perl_croak(aTHX_ "to_javabin refuses double reference");
+            Perl_croak(aTHX_ "TODO: to_javabin double");
         case SVt_PV:
             if (ref)
-                Perl_croak(aTHX_ "Invalid to_javabin input: string ref");
+                Perl_croak(aTHX_ "to_javabin refuses string reference");
 
             STRLEN len = SvCUR(sv);
 
@@ -556,16 +558,16 @@ void write_sv(pTHX_ SV *sv) {
             if (strcmp(class, "JavaBin::Bool") == 0)
                 *out++ = SvIV(sv) == 1 ? 1 : 2;
             else
-                Perl_croak(aTHX_ "Invalid to_javabin input: object");
+                Perl_croak(aTHX_ "to_javabin refuses object");
 
             return;
         }
         case SVt_REGEXP:
-            Perl_croak(aTHX_ "Invalid to_javabin input: regex");
+            Perl_croak(aTHX_ "to_javabin refuses regular expression");
         case SVt_PVGV:
-            Perl_croak(aTHX_ "Invalid to_javabin input: glob");
+            Perl_croak(aTHX_ "to_javabin refuses typeglob");
         case SVt_PVLV:
-            Perl_croak(aTHX_ "Invalid to_javabin input: lvalue");
+            Perl_croak(aTHX_ "to_javabin refuses lvalue");
         case SVt_PVAV: {
             uint32_t size = AvFILL(sv) + 1;
 
@@ -620,11 +622,11 @@ void write_sv(pTHX_ SV *sv) {
             return;
         }
         case SVt_PVCV:
-            Perl_croak(aTHX_ "Invalid to_javabin input: sub ref");
+            Perl_croak(aTHX_ "to_javabin refuses subroutine");
         case SVt_PVFM:
-            Perl_croak(aTHX_ "Invalid to_javabin input: format");
+            Perl_croak(aTHX_ "to_javabin refuses format");
         case SVt_PVIO:
-            Perl_croak(aTHX_ "Invalid to_javabin input: I/O object");
+            Perl_croak(aTHX_ "to_javabin refuses I/O object");
         default:
             NOT_REACHED;
     }

@@ -23,20 +23,21 @@ format=
 .
 
 my %to = (
-        'format' => *STDOUT{FORMAT},
-          'glob' => *STDIN,
-    'I/O object' => *STDIN{IO},
-       'int ref' => \2,
-        'lvalue' => undef,
-        'object' => bless(\$_),
-         'regex' => qr//,
-    'string ref' => \"",
-       'sub ref' => sub {},
+      'double reference' => \.1,
+                'format' => *STDOUT{FORMAT},
+            'I/O object' => *STDIN{IO},
+     'integer reference' => \2,
+                'lvalue' => undef,
+                'object' => bless(\$_),
+    'regular expression' => qr//,
+      'string reference' => \"",
+            'subroutine' => sub {},
+              'typeglob' => *STDIN,
 );
 
 is exception { to_javabin $to{$_} ? $to{$_} : pos },
-    "Invalid to_javabin input: $_ at $0 line @{[__LINE__-1]}.\n",
-    "to_javabin $_"
+    "to_javabin refuses $_ at $0 line @{[__LINE__-1]}.\n",
+    "to_javabin refuses $_"
         for sort keys %to;
 
 done_testing;

@@ -6,8 +6,13 @@
 #define DISPATCH tag >> 5 ? dispatch_shift[tag >> 5](aTHX) : dispatch[tag](aTHX)
 
 // Needed for perl 5.18.
+#ifndef __has_builtin
+    #define __has_builtin(x) 0
+#endif
+
 #ifndef NOT_REACHED
-    #if __has_builtin(__builtin_unreachable)
+    #if __has_builtin(__builtin_unreachable)\
+        || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5 || __GNUC__ > 5)
         #define NOT_REACHED __builtin_unreachable()
     #elif defined(_MSC_VER)
         #define NOT_REACHED __assume(0)

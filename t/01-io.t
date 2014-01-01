@@ -34,7 +34,7 @@ my %to = (
        'sub ref' => sub {},
 );
 
-is exception { to_javabin $to{$_} || substr '', 0 },
+is exception { to_javabin $to{$_} ? $to{$_} : pos },
     "Invalid to_javabin input: $_ at $0 line @{[__LINE__-1]}.\n",
     "to_javabin $_"
         for sort keys %to;

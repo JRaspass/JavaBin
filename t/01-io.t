@@ -19,16 +19,16 @@ is exception { from_javabin $from{$_} },
     "from_javabin $_"
         for sort keys %from;
 
-format STDOUT =
+format=
 .
 
 my %to = (
         'format' => *STDOUT{FORMAT},
-          'glob' => *STDOUT,
-    'I/O object' => *STDOUT{IO},
+          'glob' => *STDIN,
+    'I/O object' => *STDIN{IO},
        'int ref' => \2,
         'lvalue' => undef,
-        'object' => bless( \(my $o) ),
+        'object' => bless(\$_),
          'regex' => qr//,
     'string ref' => \"",
        'sub ref' => sub {},

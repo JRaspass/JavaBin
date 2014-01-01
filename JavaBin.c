@@ -468,7 +468,7 @@ void write_sv(pTHX_ SV *sv) {
     switch (SvTYPE(sv)) {
         case SVt_NULL:
             *out++ = 0;
-            break;
+            return;
         case SVt_IV:
         case SVt_PVIV: {
             int64_t i = SvIV(sv);
@@ -512,8 +512,11 @@ void write_sv(pTHX_ SV *sv) {
                 *out++ = i;
             }
 
-            break;
+            return;
         }
+        case SVt_NV:
+        case SVt_PVNV:
+            Perl_croak(aTHX_ "TODO: to_javabin float");
         case SVt_PV:
             if (ref)
                 Perl_croak(aTHX_ "Invalid to_javabin input: string ref");
@@ -526,7 +529,7 @@ void write_sv(pTHX_ SV *sv) {
 
             out += len;
 
-            break;
+            return;
         case SVt_PVMG: {
             char *class = HvAUX(
                 ((XPVMG*) SvANY(sv))->xmg_stash
@@ -537,12 +540,14 @@ void write_sv(pTHX_ SV *sv) {
             else
                 Perl_croak(aTHX_ "Invalid to_javabin input: object");
 
-            break;
+            return;
         }
         case SVt_REGEXP:
             Perl_croak(aTHX_ "Invalid to_javabin input: regex");
         case SVt_PVGV:
             Perl_croak(aTHX_ "Invalid to_javabin input: glob");
+        case SVt_PVLV:
+            Perl_croak(aTHX_ "Invalid to_javabin input: lvalue");
         case SVt_PVAV: {
             uint32_t size = AvFILL(sv) + 1;
 
@@ -553,7 +558,7 @@ void write_sv(pTHX_ SV *sv) {
             while (ary != end)
                 write_sv(aTHX_ *ary++);
 
-            break;
+            return;
         }
         case SVt_PVHV: {
             *out++ = 10;
@@ -594,13 +599,19 @@ void write_sv(pTHX_ SV *sv) {
             else
                 *out++ = 0;
 
-            break;
+            return;
         }
         case SVt_PVCV:
             Perl_croak(aTHX_ "Invalid to_javabin input: sub ref");
+        case SVt_PVFM:
+            Perl_croak(aTHX_ "Invalid to_javabin input: format");
+        case SVt_PVIO:
+            Perl_croak(aTHX_ "Invalid to_javabin input: I/O object");
         default:
-            fprintf(stderr, "other: %d\n", SvTYPE(sv));
+            NOT_REACHED;
     }
+
+    NOT_REACHED;
 }
 
 void from_javabin(pTHX_ CV *cv) {

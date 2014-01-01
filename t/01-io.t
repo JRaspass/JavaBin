@@ -5,40 +5,38 @@ use JavaBin;
 use Test::Fatal;
 use Test::More;
 
-is from_javabin(), undef, 'no args, scalar context';
+is from_javabin(), undef, 'from_javabin no args, scalar context';
 
-is_deeply [from_javabin()], [], 'no args, array context';
+is_deeply [from_javabin()], [], 'from_javabin no args, array context';
 
-is exception { from_javabin '' },
-    "Invalid from_javabin input: insufficient length at $0 line " . (__LINE__ - 1) . ".\n",
-    'insufficient length';
+my %from = (
+     'expected version 2' => "\0\0",
+    'insufficient length' => '',
+);
 
-is exception { from_javabin "\0\0" },
-    "Invalid from_javabin input: expected version 2 at $0 line " . (__LINE__ - 1) . ".\n",
-    'invalid version';
+is exception { from_javabin $from{$_} },
+    "Invalid from_javabin input: $_ at $0 line @{[__LINE__-1]}.\n",
+    "from_javabin $_"
+        for sort keys %from;
 
-is exception { to_javabin \2 },
-    "Invalid to_javabin input: int ref at $0 line " . (__LINE__ - 1) . ".\n",
-    'to_javabin \2';
+format STDOUT =
+.
 
-is exception { to_javabin \"" },
-    "Invalid to_javabin input: string ref at $0 line " . (__LINE__ - 1) . ".\n",
-    'to_javabin \""';
+my %to = (
+        'format' => *STDOUT{FORMAT},
+          'glob' => *STDOUT,
+    'I/O object' => *STDOUT{IO},
+       'int ref' => \2,
+        'lvalue' => undef,
+        'object' => bless( \(my $o) ),
+         'regex' => qr//,
+    'string ref' => \"",
+       'sub ref' => sub {},
+);
 
-is exception { to_javabin bless \(my $o) },
-    "Invalid to_javabin input: object at $0 line " . (__LINE__ - 1) . ".\n",
-    'to_javabin bless \(my $o)';
-
-is exception { to_javabin qr// },
-    "Invalid to_javabin input: regex at $0 line " . (__LINE__ - 1) . ".\n",
-    'to_javabin qr//';
-
-is exception { no warnings 'once'; to_javabin *DATA },
-    "Invalid to_javabin input: glob at $0 line " . (__LINE__ - 1) . ".\n",
-    'to_javabin *DATA';
-
-is exception { to_javabin sub {} },
-    "Invalid to_javabin input: sub ref at $0 line " . (__LINE__ - 1) . ".\n",
-    'to_javabin sub {}';
+is exception { to_javabin $to{$_} || substr '', 0 },
+    "Invalid to_javabin input: $_ at $0 line @{[__LINE__-1]}.\n",
+    "to_javabin $_"
+        for sort keys %to;
 
 done_testing;

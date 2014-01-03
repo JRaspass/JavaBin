@@ -33,6 +33,7 @@ my %to = (
       'string reference' => \"",
             'subroutine' => sub {},
               'typeglob' => *STDIN,
+              'v-string' => v1,
 );
 
 is exception { to_javabin $to{$_} ? $to{$_} : pos },

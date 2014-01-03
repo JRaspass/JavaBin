@@ -552,6 +552,9 @@ static void write_sv(pTHX_ SV *sv) {
 
             return;
         case SVt_PVMG: {
+            if (SvVOK(sv))
+                Perl_croak(aTHX_ "to_javabin denies v-string");
+
             char *class = HvAUX(
                 ((XPVMG*) SvANY(sv))->xmg_stash
             )->xhv_name_u.xhvnameu_name->hek_key;

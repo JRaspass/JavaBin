@@ -677,7 +677,7 @@ void to_javabin(pTHX_ CV *cv) {
 
     out = (uint8_t *)SvPVX(targ);
 
-    *out++ = '\2';
+    *out++ = 2;
 
     write_sv(aTHX_ *sp);
 

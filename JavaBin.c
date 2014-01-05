@@ -670,19 +670,21 @@ void to_javabin(pTHX_ CV *cv) {
 
     SV **sp = PL_stack_base + *PL_markstack_ptr + 1;
 
-    if (sp > PL_stack_sp)
-        return;
+    SV *targ = PAD_SV(PL_op->op_targ);
 
-    //FIXME obviously
-    uint8_t *out_start = out = malloc(1000);
+    SvUPGRADE(targ, SVt_PV);
+    SvGROW(targ, 1000); //FIXME obviously.
+    SvPOK_on(targ);
+
+    out = (uint8_t *)SvPVX(targ);
 
     *out++ = '\2';
 
     write_sv(aTHX_ *sp);
 
-    *sp = Perl_newSVpvn_flags(aTHX_ (char *)out_start, out - out_start, 0);
+    SvCUR(targ) = out - (uint8_t *)SvPVX(targ);
 
-    free(out_start);
+    *sp = targ;
 
     PL_stack_sp = sp;
 }

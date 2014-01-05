@@ -672,8 +672,7 @@ void to_javabin(pTHX_ CV *cv) {
 
     SV *targ = PAD_SV(PL_op->op_targ);
 
-    SvUPGRADE(targ, SVt_PV);
-    SvGROW(targ, 1000); //FIXME obviously.
+    Perl_sv_grow(aTHX_ targ, 1000); //FIXME obviously.
     SvPOK_on(targ);
 
     out = (uint8_t *)SvPVX(targ);

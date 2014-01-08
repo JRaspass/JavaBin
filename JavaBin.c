@@ -477,165 +477,138 @@ static void write_shifted_tag(uint8_t tag, uint32_t len) {
 }
 
 static void write_sv(pTHX_ SV *sv) {
-    bool ref = FALSE;
+    SvGETMAGIC(sv);
 
-    if (SvROK(sv)) {
-        ref = TRUE;
+    if (SvPOKp(sv)) {
+        STRLEN len = SvCUR(sv);
+
+        write_shifted_tag(32, len);
+
+        memcpy(out, SvPVX(sv), len);
+
+        out += len;
+    }
+    else if (SvNOKp(sv)) {
+        Perl_croak(aTHX_ "TODO: to_javabin double");
+    }
+    else if (SvIOKp(sv)) {
+        int64_t i = SvIV(sv);
+
+        if (i == (int8_t)i) {
+            *out++ = 3;
+            *out++ = i;
+        }
+        else if (i == (int16_t)i) {
+            *out++ = 4;
+            *out++ = i >> 8;
+            *out++ = i;
+        }
+        else if (i == (int32_t)i) {
+            *out++ = 6;
+            *out++ = i >> 24;
+            *out++ = i >> 16;
+            *out++ = i >> 8;
+            *out++ = i;
+        }
+        else {
+            *out++ = 7;
+            *out++ = i >> 56;
+            *out++ = i >> 48;
+            *out++ = i >> 40;
+            *out++ = i >> 32;
+            *out++ = i >> 24;
+            *out++ = i >> 16;
+            *out++ = i >> 8;
+            *out++ = i;
+        }
+    }
+    else if (SvROK(sv)) {
         sv = SvRV(sv);
-    }
 
-    switch (SvTYPE(sv)) {
-        case SVt_NULL:
-            *out++ = 0;
-            return;
-        case SVt_IV:
-        case SVt_PVIV: {
-            int64_t i = SvIV(sv);
-
-            if (ref) {
-                if (i == 1)
-                    *out++ = 1;
-                else if (i == 0)
-                    *out++ = 2;
-                else
-                    Perl_croak(aTHX_ "to_javabin denies integer reference");
-
-                return;
-            }
-
-            if (i == (int8_t) i) {
-                *out++ = 3;
-                *out++ = i;
-            }
-            else if (i == (int16_t) i) {
-                *out++ = 4;
-                *out++ = i >> 8;
-                *out++ = i;
-            }
-            else if (i == (int32_t) i) {
-                *out++ = 6;
-                *out++ = i >> 24;
-                *out++ = i >> 16;
-                *out++ = i >> 8;
-                *out++ = i;
-            }
-            else {
-                *out++ = 7;
-                *out++ = i >> 56;
-                *out++ = i >> 48;
-                *out++ = i >> 40;
-                *out++ = i >> 32;
-                *out++ = i >> 24;
-                *out++ = i >> 16;
-                *out++ = i >> 8;
-                *out++ = i;
-            }
+        // If we have a JavaBin::Bool.
+        if (
+            SvOBJECT(sv) &&
+            strcmp(
+                HvAUX(
+                    ((XPVMG*) SvANY(sv))->xmg_stash
+                )->xhv_name_u.xhvnameu_name->hek_key,
+                "JavaBin::Bool"
+            ) == 0
+        ) {
+            *out++ = SvIV(sv) == 1 ? 1 : 2;
 
             return;
         }
-        case SVt_NV:
-        case SVt_PVNV:
-            if (ref)
-                Perl_croak(aTHX_ "to_javabin denies double reference");
-            Perl_croak(aTHX_ "TODO: to_javabin double");
-        case SVt_PV:
-            if (ref)
-                Perl_croak(aTHX_ "to_javabin denies string reference");
 
-            STRLEN len = SvCUR(sv);
+        switch (SvTYPE(sv)) {
+            case SVt_IV: {
+                int64_t i =SvIV(sv);
 
-            write_shifted_tag(32, len);
+                *out++ = i == 0 ? 2
+                       : i == 1 ? 1
+                       :          0;
 
-            memcpy(out, SvPVX(sv), len);
+                break;
+            }
+            case SVt_PVAV: {
+                uint32_t size = AvFILL(sv) + 1;
 
-            out += len;
+                write_shifted_tag(128, size);
 
-            return;
-        case SVt_PVMG: {
-            if (SvVOK(sv))
-                Perl_croak(aTHX_ "to_javabin denies v-string");
+                SV **ary = AvARRAY(sv), **end = ary + size;
 
-            char *class = HvAUX(
-                ((XPVMG*) SvANY(sv))->xmg_stash
-            )->xhv_name_u.xhvnameu_name->hek_key;
+                while (ary != end)
+                    write_sv(aTHX_ *ary++);
 
-            if (strcmp(class, "JavaBin::Bool") == 0)
-                *out++ = SvIV(sv) == 1 ? 1 : 2;
-            else
-                Perl_croak(aTHX_ "to_javabin denies object");
+                break;
+            }
+            case SVt_PVHV: {
+                *out++ = 10;
 
-            return;
-        }
-        case SVt_REGEXP:
-            Perl_croak(aTHX_ "to_javabin denies regular expression");
-        case SVt_PVGV:
-            Perl_croak(aTHX_ "to_javabin denies typeglob");
-        case SVt_PVLV:
-            Perl_croak(aTHX_ "to_javabin denies lvalue");
-        case SVt_PVAV: {
-            uint32_t size = AvFILL(sv) + 1;
+                uint32_t len;
 
-            write_shifted_tag(128, size);
+                if ((len = HvUSEDKEYS(sv))) {
+                    write_v_int(len);
 
-            SV **ary = AvARRAY(sv), **end = ary + size;
+                    HE **start = HvARRAY(sv), **end = start + HvMAX(sv) + 1;
 
-            while (ary != end)
-                write_sv(aTHX_ *ary++);
+                    do {
+                        HE *entry;
 
-            return;
-        }
-        case SVt_PVHV: {
-            *out++ = 10;
+                        for (entry = *start++; entry; entry = HeNEXT(entry)) {
+                            SV *value = HeVAL(entry);
 
-            uint32_t len;
+                            if (value != &PL_sv_placeholder) {
+                                //TODO Implement the cached key feature.
+                                *out++ = 0;
 
-            if ((len = HvUSEDKEYS(sv))) {
-                write_v_int(len);
+                                uint32_t klen = HeKLEN(entry);
 
-                HE **start = HvARRAY(sv), **end = start + HvMAX(sv) + 1;
+                                write_shifted_tag(32, klen);
 
-                do {
-                    HE *entry;
+                                memcpy(out, HeKEY(entry), klen);
 
-                    for (entry = *start++; entry; entry = HeNEXT(entry)) {
-                        SV *value = HeVAL(entry);
+                                out += klen;
 
-                        if (value != &PL_sv_placeholder) {
-                            //TODO Implement the cached key feature.
-                            *out++ = 0;
+                                write_sv(aTHX_ value);
 
-                            uint32_t klen = HeKLEN(entry);
-
-                            write_shifted_tag(32, klen);
-
-                            memcpy(out, HeKEY(entry), klen);
-
-                            out += klen;
-
-                            write_sv(aTHX_ value);
-
-                            if (--len == 0)
-                                return;
+                                if (--len == 0)
+                                    return;
+                            }
                         }
-                    }
-                } while (start != end);
+                    } while (start != end);
+                }
+                else
+                    *out++ = 0;
+
+                break;
             }
-            else
+            default:
                 *out++ = 0;
-
-            return;
         }
-        case SVt_PVCV:
-            Perl_croak(aTHX_ "to_javabin denies subroutine");
-        case SVt_PVFM:
-            Perl_croak(aTHX_ "to_javabin denies format");
-        case SVt_PVIO:
-            Perl_croak(aTHX_ "to_javabin denies I/O object");
-        default:
-            NOT_REACHED;
     }
-
-    NOT_REACHED;
+    else
+        *out++ = 0;
 }
 
 void from_javabin(pTHX_ CV *cv) {

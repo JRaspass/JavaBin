@@ -27,18 +27,14 @@ my %to = (
                 'format' => *STDOUT{FORMAT},
             'I/O object' => *STDIN{IO},
      'integer reference' => \2,
-                'lvalue' => undef,
                 'object' => bless(\$_),
     'regular expression' => qr//,
       'string reference' => \"",
             'subroutine' => sub {},
               'typeglob' => *STDIN,
-              'v-string' => v1,
+                 'undef' => undef,
 );
 
-is exception { to_javabin $to{$_} ? $to{$_} : pos },
-    "to_javabin denies $_ at $0 line @{[__LINE__-1]}.\n",
-    "to_javabin denies $_"
-        for sort keys %to;
+is to_javabin( $to{$_} ), "\2\0", "to_javabin $_" for sort keys %to;
 
 done_testing;

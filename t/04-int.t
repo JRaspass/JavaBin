@@ -29,10 +29,15 @@ for (@ints) {
                 : -2_147_483_649 < $i && $i < 2_147_483_648 ? "\2\6" . pack 'l>', $i
                 :                                             "\2\7" . pack 'q>', $i;
 
-    is to_javabin($i), $javabin, "  to_javabin $_ (IV)";
-    is to_javabin($_), $javabin, "  to_javabin $_ (PVIV)";
+    is to_javabin($i), $javabin, "  to_javabin $_";
 
     is from_javabin($javabin), $i, "from_javabin $_";
+
+    $javabin = "\2" . chr( 32 | length ) . $_;
+
+    is to_javabin($_), $javabin, qq/  to_javabin "$_"/;
+
+    is from_javabin($javabin), $i, qq/from_javabin "$_"/;
 }
 
 done_testing;

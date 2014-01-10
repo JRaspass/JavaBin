@@ -1,7 +1,6 @@
 #define PERL_NO_GET_CONTEXT
 #include "EXTERN.h"
 #include "perl.h"
-#include "XSUB.h"
 
 #define DISPATCH tag >> 5 ? dispatch_shift[tag >> 5](aTHX) : dispatch[tag](aTHX)
 

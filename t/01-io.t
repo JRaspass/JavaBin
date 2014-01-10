@@ -26,7 +26,6 @@ my %to = (
       'double reference' => \.1,
                 'format' => *STDOUT{FORMAT},
             'I/O object' => *STDIN{IO},
-     'integer reference' => \2,
                 'object' => bless(\$_),
     'regular expression' => qr//,
       'string reference' => \"",

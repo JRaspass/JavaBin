@@ -517,18 +517,14 @@ static void write_sv(pTHX_ SV *sv) {
                 "JavaBin::Bool"
             ) == 0
         ) {
-            *out++ = SvIV(sv) == 1 ? 1 : 2;
+            *out++ = SvIV(sv) ? 1 : 2;
 
             return;
         }
 
         switch (SvTYPE(sv)) {
             case SVt_IV: {
-                int64_t i =SvIV(sv);
-
-                *out++ = i == 0 ? 2
-                       : i == 1 ? 1
-                       :          0;
+                *out++ = SvIV(sv) ? 1 : 2;
 
                 break;
             }

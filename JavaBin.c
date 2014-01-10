@@ -5,22 +5,24 @@
 
 #define DISPATCH tag >> 5 ? dispatch_shift[tag >> 5](aTHX) : dispatch[tag](aTHX)
 
+typedef SV* (*FP)(pTHX);
+
 typedef union { uint64_t i; double d; } int_to_double;
 typedef union { uint32_t i; float  f; } int_to_float;
 
 // TODO non fixed cache size?
-uint8_t *cache_keys[100], cache_pos, *in, *out, tag;
-uint32_t cache_sizes[100];
+static uint8_t *cache_keys[100], cache_pos, *in, *out, tag;
+static uint32_t cache_sizes[100];
 
 // Computed at boot hash keys.
-uint32_t docs, maxScore, numFound, start;
+static uint32_t docs, maxScore, numFound, start;
 
 // Globally stored JavaBin::Bool's of true and false.
-SV *bool_true, *bool_false;
+static SV *bool_true, *bool_false;
 
 // Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
 // http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
-static uint32_t read_v_int(void) {
+static uint32_t read_v_int() {
     uint8_t shift;
     uint32_t result = (tag = *in++) & 127;
 
@@ -30,7 +32,7 @@ static uint32_t read_v_int(void) {
     return result;
 }
 
-static uint32_t read_size(void) {
+static uint32_t read_size() {
     uint32_t size = tag & 31;
 
     if (size == 31)
@@ -61,7 +63,7 @@ static SV* read_small_int(pTHX);
 static SV* read_small_long(pTHX);
 static SV* read_array(pTHX);
 
-SV *(*dispatch[19])(pTHX) = {
+static const FP dispatch[] = {
     read_undef,
     read_true,
     read_false,
@@ -91,7 +93,7 @@ SV *(*dispatch[19])(pTHX) = {
 // matches this then an additional vint is added.
 //
 // The overview of the tag byte is therefore TTTSSSSS with T and S being type and size.
-SV *(*dispatch_shift[7])(pTHX) = {
+static const FP dispatch_shift[] = {
     NULL,
     read_string,
     read_small_int,
@@ -607,7 +609,7 @@ static void write_sv(pTHX_ SV *sv) {
         *out++ = 0;
 }
 
-void from_javabin(pTHX_ CV *cv) {
+static void from_javabin(pTHX_ CV *cv) {
     PERL_UNUSED_VAR(cv);
 
     SV **sp = PL_stack_base + *PL_markstack_ptr + 1;
@@ -634,7 +636,7 @@ void from_javabin(pTHX_ CV *cv) {
     PL_stack_sp = sp;
 }
 
-void to_javabin(pTHX_ CV *cv) {
+static void to_javabin(pTHX_ CV *cv) {
     PERL_UNUSED_VAR(cv);
 
     SV **sp = PL_stack_base + *PL_markstack_ptr + 1;
@@ -657,7 +659,7 @@ void to_javabin(pTHX_ CV *cv) {
     PL_stack_sp = sp;
 }
 
-void deref(pTHX_ CV *cv) {
+static void deref(pTHX_ CV *cv) {
     PERL_UNUSED_VAR(cv);
 
     PL_stack_sp = PL_stack_base + *PL_markstack_ptr + 1;

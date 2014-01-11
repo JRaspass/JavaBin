@@ -687,8 +687,8 @@ void boot(pTHX_ CV *cv) {
     SvOBJECT_on(bool_true);
     SvOBJECT_on(bool_false);
 
-    SvREFCNT(bool_true)--;
-    SvREFCNT(bool_false)--;
+    // Perl_sv_setsv_flags will set these back to 1.
+    SvREFCNT(bool_true) = SvREFCNT(bool_false) = 0;
 
     SvSTASH(bool_true) = SvSTASH(bool_false) = bool_stash;
 

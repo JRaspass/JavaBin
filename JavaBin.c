@@ -19,6 +19,8 @@ static uint32_t docs, maxScore, numFound, start;
 // Globally stored JavaBin::Bool's of true and false.
 static SV *bool_true, *bool_false;
 
+static HV* bool_stash;
+
 // Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
 // http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
 static uint32_t read_v_int() {
@@ -509,26 +511,13 @@ static void write_sv(pTHX_ SV *sv) {
         sv = SvRV(sv);
 
         // If we have a JavaBin::Bool.
-        if (
-            SvOBJECT(sv) &&
-            strcmp(
-                HvAUX(
-                    ((XPVMG*) SvANY(sv))->xmg_stash
-                )->xhv_name_u.xhvnameu_name->hek_key,
-                "JavaBin::Bool"
-            ) == 0
-        ) {
+        if (SvTYPE(sv) == SVt_IV || SvSTASH(sv) == bool_stash) {
             *out++ = SvIV(sv) ? 1 : 2;
 
             return;
         }
 
         switch (SvTYPE(sv)) {
-            case SVt_IV: {
-                *out++ = SvIV(sv) ? 1 : 2;
-
-                break;
-            }
             case SVt_PVAV: {
                 uint32_t len = AvFILL(sv) + 1;
 
@@ -704,8 +693,8 @@ void boot(pTHX_ CV *cv) {
     );
 
     // Make two bools (true and false), store them in globals.
-    HV *stash = Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0);
-    SvREFCNT(stash) += 2;
+    bool_stash = Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0);
+    SvREFCNT(bool_stash) += 2;
 
     bool_true  = Perl_newSVuv(aTHX_ 1);
     bool_false = Perl_newSVuv(aTHX_ 0);
@@ -719,8 +708,8 @@ void boot(pTHX_ CV *cv) {
     SvREFCNT(bool_true)--;
     SvREFCNT(bool_false)--;
 
-    SvSTASH_set(bool_true, stash);
-    SvSTASH_set(bool_false, stash);
+    SvSTASH_set(bool_true, bool_stash);
+    SvSTASH_set(bool_false, bool_stash);
 
     // Take refs to the bool and store them on the JavaBin pkg.
     SV *sv = Perl_newSV_type(aTHX_ SVt_IV);

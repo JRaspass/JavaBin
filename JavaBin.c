@@ -237,7 +237,7 @@ SV* read_date(pTHX) {
 }
 
 SV* read_map(pTHX) {
-    HV *hv = newHV();
+    HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
 
     uint32_t key_size, size = tag >> 5 ? read_size() : read_v_int();
 
@@ -282,7 +282,7 @@ SV* read_solr_doc(pTHX) {
 }
 
 SV* read_solr_doc_list(pTHX) {
-    HV *hv = newHV();
+    HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
 
     // Assume values are in an array, skip tag & DISPATCH.
     in++;
@@ -311,7 +311,7 @@ SV* read_solr_doc_list(pTHX) {
 }
 
 SV* read_byte_array(pTHX) {
-    AV *av = newAV();
+    AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
     uint32_t size;
 
     if ((size = read_v_int())) {
@@ -333,11 +333,11 @@ SV* read_byte_array(pTHX) {
 }
 
 SV* read_iterator(pTHX) {
-    AV *av = newAV();
+    AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
     uint32_t i = 0;
 
     while ((tag = *in++) != 15)
-        av_store(av, i++, DISPATCH);
+        Perl_av_store(aTHX_ av, i++, DISPATCH);
 
     SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
 
@@ -418,7 +418,7 @@ SV* read_small_long(pTHX) {
 }
 
 SV* read_array(pTHX) {
-    AV *av = newAV();
+    AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
     uint32_t size;
 
     if ((size = read_size())) {

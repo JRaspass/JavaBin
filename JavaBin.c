@@ -519,27 +519,9 @@ static void write_sv(pTHX_ SV *sv) {
 
         switch (SvTYPE(sv)) {
             case SVt_PVAV: {
-                uint32_t len = AvFILL(sv) + 1;
+                uint32_t len = AvFILLp(sv) + 1;
 
                 write_shifted_tag(128, len);
-
-                if (SvRMAGICAL(sv)) {
-                    uint32_t i = 0;
-
-                    while (i != len) {
-                        SV *elem = Perl_sv_newmortal(aTHX);
-
-                        Perl_sv_upgrade(aTHX_ elem, SVt_PVLV);
-
-                        Perl_mg_copy(aTHX_ sv, elem, 0, i++);
-
-                        LvTYPE(elem) = 't';
-
-                        write_sv(aTHX_ elem);
-                    }
-
-                    break;
-                }
 
                 SV **ary = AvARRAY(sv), **end = ary + len;
 

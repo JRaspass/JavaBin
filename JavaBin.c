@@ -436,7 +436,7 @@ SV* read_array(pTHX) {
     SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
 
     SvROK_on(rv);
-    SvRV_set(rv, (SV*)av);
+    SvRV(rv) = (SV*)av;
 
     return rv;
 }
@@ -690,14 +690,13 @@ void boot(pTHX_ CV *cv) {
     SvREFCNT(bool_true)--;
     SvREFCNT(bool_false)--;
 
-    SvSTASH_set(bool_true, bool_stash);
-    SvSTASH_set(bool_false, bool_stash);
+    SvSTASH(bool_true) = SvSTASH(bool_false) = bool_stash;
 
     // Take refs to the bool and store them on the JavaBin pkg.
     SV *sv = Perl_newSV_type(aTHX_ SVt_IV);
 
     SvROK_on(sv);
-    SvRV_set(sv, bool_true);
+    SvRV(sv) = bool_true;
 
     Perl_sv_setsv_flags(
         aTHX_
@@ -709,7 +708,7 @@ void boot(pTHX_ CV *cv) {
     sv = Perl_newSV_type(aTHX_ SVt_IV);
 
     SvROK_on(sv);
-    SvRV_set(sv, bool_false);
+    SvRV(sv) = bool_false;
 
     Perl_sv_setsv_flags(
         aTHX_

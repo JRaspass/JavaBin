@@ -3,6 +3,7 @@
 #include "perl.h"
 
 #define DISPATCH tag >> 5 ? dispatch_shift[tag >> 5](aTHX) : dispatch[tag](aTHX)
+#define READ_LEN (tag & 31) == 31 ? 31 + read_v_int() : tag & 31
 
 typedef SV* (*FP)(pTHX);
 
@@ -31,15 +32,6 @@ static uint32_t read_v_int() {
         result |= ((tag = *in++) & 127) << shift;
 
     return result;
-}
-
-static uint32_t read_size() {
-    uint32_t size = tag & 31;
-
-    if (size == 31)
-        size += read_v_int();
-
-    return size;
 }
 
 // Functions to read the various JavaBin datatypes and return a Perl SV.
@@ -228,14 +220,14 @@ SV* read_date(pTHX) {
 SV* read_map(pTHX) {
     HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
 
-    uint32_t key_size, size = tag >> 5 ? read_size() : read_v_int();
+    uint32_t key_size, size = tag >> 5 ? READ_LEN : read_v_int();
 
     while (size--) {
         uint8_t *key;
 
         tag = *in++;
 
-        if ((key_size = read_size())) {
+        if ((key_size = READ_LEN)) {
             key = cache_keys[key_size];
 
             key_size = cache_sizes[key_size];
@@ -243,7 +235,7 @@ SV* read_map(pTHX) {
         else {
             tag = *in++;
 
-            cache_sizes[++cache_pos] = key_size = read_size();
+            cache_sizes[++cache_pos] = key_size = READ_LEN;
 
             cache_keys[cache_pos] = key = in;
 
@@ -346,7 +338,7 @@ SV* read_enum(pTHX) {
 
     tag = *in++;
 
-    uint32_t len = read_size();
+    uint32_t len = READ_LEN;
 
     char *str = Perl_sv_grow(aTHX_ sv, len + 1);
 
@@ -374,7 +366,7 @@ SV* read_enum(pTHX) {
 }
 
 SV* read_string(pTHX) {
-    uint32_t len = read_size();
+    uint32_t len = READ_LEN;
 
     SV *string = Perl_newSVpvn_flags(aTHX_ (char *)in, len, SVf_UTF8);
 
@@ -410,7 +402,7 @@ SV* read_array(pTHX) {
     AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
     uint32_t len;
 
-    if ((len = read_size())) {
+    if ((len = READ_LEN)) {
         SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
 
         AvALLOC(av) = AvARRAY(av) = ary;

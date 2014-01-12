@@ -44,8 +44,7 @@ static uint32_t read_size() {
 
 // Functions to read the various JavaBin datatypes and return a Perl SV.
 static SV* read_undef(pTHX);
-static SV* read_true(pTHX);
-static SV* read_false(pTHX);
+static SV* read_bool(pTHX);
 static SV* read_byte(pTHX);
 static SV* read_short(pTHX);
 static SV* read_double(pTHX);
@@ -66,8 +65,8 @@ static SV* read_array(pTHX);
 
 static const FP dispatch[] = {
     read_undef,
-    read_true,
-    read_false,
+    read_bool,
+    read_bool,
     read_byte,
     read_short,
     read_double,
@@ -106,24 +105,14 @@ static const FP dispatch_shift[] = {
 
 SV* read_undef(pTHX) { return &PL_sv_undef; }
 
-SV* read_true(pTHX) {
-    SV *sv = Perl_newSV_type(aTHX_ SVt_IV);
+SV* read_bool(pTHX) {
+    SV *rv = Perl_newSV_type(aTHX_ SVt_IV), *sv = tag == 1 ? bool_true : bool_false;
 
-    SvREFCNT(bool_true)++;
-    SvROK_on(sv);
-    SvRV_set(sv, bool_true);
+    SvREFCNT(sv)++;
+    SvROK_on(rv);
+    SvRV_set(rv, sv);
 
-    return sv;
-}
-
-SV* read_false(pTHX) {
-    SV *sv = Perl_newSV_type(aTHX_ SVt_IV);
-
-    SvREFCNT(bool_false)++;
-    SvROK_on(sv);
-    SvRV_set(sv, bool_false);
-
-    return sv;
+    return rv;
 }
 
 SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *in++); }

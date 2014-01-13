@@ -2,7 +2,7 @@
 #include "EXTERN.h"
 #include "perl.h"
 
-#define DISPATCH tag >> 5 ? dispatch_shift[tag >> 5](aTHX) : dispatch[tag](aTHX)
+#define DISPATCH dispatch[tag >> 5 ? (tag >> 5) + 18 : tag](aTHX)
 #define READ_LEN (tag & 31) == 31 ? 31 + read_v_int() : tag & 31
 
 typedef SV* (*FP)(pTHX);
@@ -35,6 +35,19 @@ static uint32_t read_v_int() {
 }
 
 // Functions to read the various JavaBin datatypes and return a Perl SV.
+//
+// The first group (undef to enum) use the entire tag for the index of the type.
+//
+// The second are matched by taking the tag byte, shifting it by 5 so to only read
+// the first 3 bits of the tag byte, giving it a range or 0-7 inclusive.
+//
+// To store both in one array the second group have 18 added to them. See DISPATCH.
+//
+// The remaining 5 bits can then be used to store the size of the datatype, e.g. how
+// many chars in a string, this therefore has a range of 0-31, if the size exceeds or
+// matches this then an additional vint is added.
+//
+// The overview of the tag byte is therefore TTTSSSSS with T and S being type and size.
 static SV* read_undef(pTHX);
 static SV* read_bool(pTHX);
 static SV* read_byte(pTHX);
@@ -55,7 +68,7 @@ static SV* read_small_int(pTHX);
 static SV* read_small_long(pTHX);
 static SV* read_array(pTHX);
 
-static const FP dispatch[] = {
+static const FP const dispatch[] = {
     read_undef,
     read_bool,
     read_bool,
@@ -75,18 +88,6 @@ static const FP dispatch[] = {
     NULL,
     NULL,
     read_enum,
-};
-
-// These datatypes are matched by taking the tag byte, shifting it by 5 so to only read
-// the first 3 bits of the tag byte, giving it a range or 0-7 inclusive.
-//
-// The remaining 5 bits can then be used to store the size of the datatype, e.g. how
-// many chars in a string, this therefore has a range of 0-31, if the size exceeds or
-// matches this then an additional vint is added.
-//
-// The overview of the tag byte is therefore TTTSSSSS with T and S being type and size.
-static const FP dispatch_shift[] = {
-    NULL,
     read_string,
     read_small_int,
     read_small_long,

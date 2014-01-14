@@ -68,7 +68,7 @@ static SV* read_small_int(pTHX);
 static SV* read_small_long(pTHX);
 static SV* read_array(pTHX);
 
-static const FP const dispatch[] = {
+static const FP dispatch[] = {
     read_undef,
     read_bool,
     read_bool,

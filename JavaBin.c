@@ -2,10 +2,7 @@
 #include "EXTERN.h"
 #include "perl.h"
 
-#define DISPATCH dispatch[tag >> 5 ? (tag >> 5) + 18 : tag](aTHX)
 #define READ_LEN (tag & 31) == 31 ? 31 + read_v_int() : tag & 31
-
-typedef SV* (*FP)(pTHX);
 
 typedef union { uint64_t i; double d; } int_to_double;
 typedef union { uint32_t i; float  f; } int_to_float;
@@ -34,7 +31,8 @@ static uint32_t read_v_int() {
     return result;
 }
 
-// Functions to read the various JavaBin datatypes and return a Perl SV.
+// This function reads the various JavaBin datatypes and returns a Perl SV.
+// Different datatypes are jumped to view a lookup in an array of computed gotos.
 //
 // The first group (undef to enum) use the entire tag for the index of the type.
 //
@@ -48,379 +46,339 @@ static uint32_t read_v_int() {
 // matches this then an additional vint is added.
 //
 // The overview of the tag byte is therefore TTTSSSSS with T and S being type and size.
-static SV* read_undef(pTHX);
-static SV* read_bool(pTHX);
-static SV* read_byte(pTHX);
-static SV* read_short(pTHX);
-static SV* read_double(pTHX);
-static SV* read_int(pTHX);
-static SV* read_long(pTHX);
-static SV* read_float(pTHX);
-static SV* read_date(pTHX);
-static SV* read_map(pTHX);
-static SV* read_solr_doc(pTHX);
-static SV* read_solr_doc_list(pTHX);
-static SV* read_byte_array(pTHX);
-static SV* read_iterator(pTHX);
-static SV* read_enum(pTHX);
-static SV* read_string(pTHX);
-static SV* read_small_int(pTHX);
-static SV* read_small_long(pTHX);
-static SV* read_array(pTHX);
+SV* read_sv(pTHX) {
+    void* dispatch[] = {
+        &&read_undef,
+        &&read_bool,
+        &&read_bool,
+        &&read_byte,
+        &&read_short,
+        &&read_double,
+        &&read_int,
+        &&read_long,
+        &&read_float,
+        &&read_date,
+        &&read_map,
+        &&read_solr_doc,
+        &&read_solr_doc_list,
+        &&read_byte_array,
+        &&read_iterator,
+        NULL,
+        NULL,
+        NULL,
+        &&read_enum,
+        &&read_string,
+        &&read_small_int,
+        &&read_small_long,
+        &&read_array,
+        &&read_map,
+        &&read_map,
+    };
 
-static const FP dispatch[] = {
-    read_undef,
-    read_bool,
-    read_bool,
-    read_byte,
-    read_short,
-    read_double,
-    read_int,
-    read_long,
-    read_float,
-    read_date,
-    read_map,
-    read_solr_doc,
-    read_solr_doc_list,
-    read_byte_array,
-    read_iterator,
-    NULL,
-    NULL,
-    NULL,
-    read_enum,
-    read_string,
-    read_small_int,
-    read_small_long,
-    read_array,
-    read_map,
-    read_map,
-};
+    goto *dispatch[tag >> 5 ? (tag >> 5) + 18 : tag];
 
-SV* read_undef(pTHX) { return &PL_sv_undef; }
+    read_undef:
+        return &PL_sv_undef;
+    read_bool: {
+        SV *rv = Perl_newSV_type(aTHX_ SVt_IV), *sv = tag == 1 ? bool_true : bool_false;
 
-SV* read_bool(pTHX) {
-    SV *rv = Perl_newSV_type(aTHX_ SVt_IV), *sv = tag == 1 ? bool_true : bool_false;
+        SvREFCNT(sv)++;
+        SvROK_on(rv);
+        SvRV_set(rv, sv);
 
-    SvREFCNT(sv)++;
-    SvROK_on(rv);
-    SvRV_set(rv, sv);
+        return rv;
+    }
+    read_byte:
+        return Perl_newSViv(aTHX_ (int8_t) *in++);
+    read_short: {
+        int16_t s = in[0] << 8 | in[1];
 
-    return rv;
-}
+        in += 2;
 
-SV* read_byte(pTHX) { return Perl_newSViv(aTHX_ (int8_t) *in++); }
+        return Perl_newSViv(aTHX_ s);
+    }
+    read_double: {
+        // For perls with double length NVs this conversion is simple.
+        // Read 8 bytes, cast to double, return. For long double perls
+        // more magic is used, see read_float for more details.
 
-SV* read_short(pTHX) {
-    int16_t s = in[0] << 8 | in[1];
+        int_to_double u = { (uint64_t) in[0] << 56 |
+                            (uint64_t) in[1] << 48 |
+                            (uint64_t) in[2] << 40 |
+                            (uint64_t) in[3] << 32 |
+                            (uint64_t) in[4] << 24 |
+                            (uint64_t) in[5] << 16 |
+                            (uint64_t) in[6] << 8  |
+                            (uint64_t) in[7] };
 
-    in += 2;
+        in += 8;
 
-    return Perl_newSViv(aTHX_ s);
-}
+    #ifdef USE_LONG_DOUBLE
+        char *str = alloca(snprintf(NULL, 0, "%.14f", u.d));
 
-// For perls with double length NVs this conversion is simple.
-// Read 8 bytes, cast to double, return. For long double perls
-// more magic is used, see read_float for more details.
-SV* read_double(pTHX) {
-    int_to_double u = { (uint64_t) in[0] << 56 |
-                        (uint64_t) in[1] << 48 |
-                        (uint64_t) in[2] << 40 |
-                        (uint64_t) in[3] << 32 |
-                        (uint64_t) in[4] << 24 |
-                        (uint64_t) in[5] << 16 |
-                        (uint64_t) in[6] << 8  |
-                        (uint64_t) in[7] };
+        sprintf(str, "%.14f", u.d);
 
-    in += 8;
+        return Perl_newSVnv(aTHX_ strtold(str, NULL));
+    #else
+        return Perl_newSVnv(aTHX_ u.d);
+    #endif
+    }
+    read_int: {
+        int32_t i = in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3];
 
-#ifdef USE_LONG_DOUBLE
-    char *str = alloca(snprintf(NULL, 0, "%.14f", u.d));
+        in += 4;
 
-    sprintf(str, "%.14f", u.d);
+        return Perl_newSViv(aTHX_ i);
+    }
+    read_long: {
+        int64_t l = (uint64_t) in[0] << 56 |
+                    (uint64_t) in[1] << 48 |
+                    (uint64_t) in[2] << 40 |
+                    (uint64_t) in[3] << 32 |
+                    (uint64_t) in[4] << 24 |
+                    (uint64_t) in[5] << 16 |
+                    (uint64_t) in[6] << 8  |
+                    (uint64_t) in[7];
 
-    return Perl_newSVnv(aTHX_ strtold(str, NULL));
-#else
-    return Perl_newSVnv(aTHX_ u.d);
-#endif
-}
+        in += 8;
 
-SV* read_int(pTHX) {
-    int32_t i = in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3];
+        return Perl_newSViv(aTHX_ l);
+    }
+    read_float: {
+        // JavaBin has a 4byte float format, NVs in perl are double or long double,
+        // therefore a little magic is required. Read the 4 bytes into an int in the
+        // correct endian order. Re-read these bits as a float, stringify this float,
+        // then finally numify the string into a double or long double.
+        int_to_float u = { in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3] };
 
-    in += 4;
+        in += 4;
 
-    return Perl_newSViv(aTHX_ i);
-}
+        char *str = alloca(snprintf(NULL, 0, "%f", u.f));
 
-SV* read_long(pTHX) {
-    int64_t l = (uint64_t) in[0] << 56 |
-                (uint64_t) in[1] << 48 |
-                (uint64_t) in[2] << 40 |
-                (uint64_t) in[3] << 32 |
-                (uint64_t) in[4] << 24 |
-                (uint64_t) in[5] << 16 |
-                (uint64_t) in[6] << 8  |
-                (uint64_t) in[7];
+        sprintf(str, "%f", u.f);
 
-    in += 8;
+    #ifdef USE_LONG_DOUBLE
+        return Perl_newSVnv(aTHX_ strtold(str, NULL));
+    #else
+        return Perl_newSVnv(aTHX_ strtod(str, NULL));
+    #endif
+    }
+    read_date: {
+        int64_t date_ms = (uint64_t) in[0] << 56 |
+                          (uint64_t) in[1] << 48 |
+                          (uint64_t) in[2] << 40 |
+                          (uint64_t) in[3] << 32 |
+                          (uint64_t) in[4] << 24 |
+                          (uint64_t) in[5] << 16 |
+                          (uint64_t) in[6] << 8  |
+                          (uint64_t) in[7];
 
-    return Perl_newSViv(aTHX_ l);
-}
+        in += 8;
 
-// JavaBin has a 4byte float format, NVs in perl are either double or long double,
-// therefore a little magic is required. Read the 4 bytes into an int in the
-// correct endian order. Re-read these bits as a float, stringify this float,
-// then finally numify the string into a double or long double.
-SV* read_float(pTHX) {
-    int_to_float u = { in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3] };
+        time_t date = date_ms / 1000;
 
-    in += 4;
+        struct tm *t = gmtime(&date);
 
-    char *str = alloca(snprintf(NULL, 0, "%f", u.f));
+        char date_str[25];
 
-    sprintf(str, "%f", u.f);
+        sprintf(date_str, "%u-%02u-%02uT%02u:%02u:%02u.%03uZ", t->tm_year + 1900,
+                                                               t->tm_mon + 1,
+                                                               t->tm_mday,
+                                                               t->tm_hour,
+                                                               t->tm_min,
+                                                               t->tm_sec,
+                                                               (uint32_t) (date_ms % 1000));
 
-#ifdef USE_LONG_DOUBLE
-    long double d = strtold(str, NULL);
-#else
-    double d = strtod(str, NULL);
-#endif
+        return Perl_newSVpvn(aTHX_ date_str, 24);
+    }
+    read_solr_doc:
+        tag = *in++; // Assume a solr soc is a map.
+    read_map: {
+        HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
 
-    return Perl_newSVnv(aTHX_ d);
-}
+        uint32_t key_size, size = tag >> 5 ? READ_LEN : read_v_int();
 
-SV* read_date(pTHX) {
-    int64_t date_ms = (uint64_t) in[0] << 56 |
-                      (uint64_t) in[1] << 48 |
-                      (uint64_t) in[2] << 40 |
-                      (uint64_t) in[3] << 32 |
-                      (uint64_t) in[4] << 24 |
-                      (uint64_t) in[5] << 16 |
-                      (uint64_t) in[6] << 8  |
-                      (uint64_t) in[7];
+        while (size--) {
+            uint8_t *key;
 
-    in += 8;
+            tag = *in++;
 
-    time_t date = date_ms / 1000;
+            if ((key_size = READ_LEN)) {
+                key = cache_keys[key_size];
 
-    struct tm *t = gmtime(&date);
+                key_size = cache_sizes[key_size];
+            }
+            else {
+                tag = *in++;
 
-    char date_str[25];
+                cache_sizes[++cache_pos] = key_size = READ_LEN;
 
-    sprintf(date_str, "%u-%02u-%02uT%02u:%02u:%02u.%03uZ", t->tm_year + 1900,
-                                                           t->tm_mon + 1,
-                                                           t->tm_mday,
-                                                           t->tm_hour,
-                                                           t->tm_min,
-                                                           t->tm_sec,
-                                                           (uint32_t) (date_ms % 1000));
+                cache_keys[cache_pos] = key = in;
 
-    return Perl_newSVpvn(aTHX_ date_str, 24);
-}
+                in += key_size;
+            }
 
-SV* read_map(pTHX) {
-    HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
+            tag = *in++;
 
-    uint32_t key_size, size = tag >> 5 ? READ_LEN : read_v_int();
+            Perl_hv_common(aTHX_ hv, NULL, (char *)key, key_size, HVhek_UTF8, HV_FETCH_ISSTORE, read_sv(aTHX), 0);
+        }
 
-    while (size--) {
-        uint8_t *key;
+        SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+        SvROK_on(rv);
+        SvRV_set(rv, (SV*)hv);
+
+        return rv;
+    }
+    read_solr_doc_list: {
+        HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
+
+        // Assume values are in an array, skip tag & read_sv.
+        in++;
+
+        tag = *in++;
+        Perl_hv_common(aTHX_ hv, NULL, "numFound", 8, 0, HV_FETCH_ISSTORE, read_sv(aTHX), numFound);
+
+        tag = *in++;
+        Perl_hv_common(aTHX_ hv, NULL, "start", 5, 0, HV_FETCH_ISSTORE, read_sv(aTHX), start);
+
+        tag = *in++;
+        Perl_hv_common(aTHX_ hv, NULL, "maxScore", 8, 0, HV_FETCH_ISSTORE, read_sv(aTHX), maxScore);
+
+        tag = *in++;
+        Perl_hv_common(aTHX_ hv, NULL, "docs", 4, 0, HV_FETCH_ISSTORE, read_sv(aTHX), docs);
+
+        SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+        SvROK_on(rv);
+        SvRV_set(rv, (SV*)hv);
+
+        return rv;
+    }
+    read_byte_array: {
+        AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
+        uint32_t len;
+
+        if ((len = read_v_int())) {
+            SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
+
+            AvALLOC(av) = AvARRAY(av) = ary;
+            AvFILLp(av) = AvMAX(av) = len - 1;
+
+            while (ary != end)
+                *ary++ = Perl_newSViv(aTHX_ (int8_t) *in++);
+        }
+
+        SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+        SvROK_on(rv);
+        SvRV_set(rv, (SV*)av);
+
+        return rv;
+    }
+    read_iterator: {
+        AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
+        uint32_t i = 0;
+
+        while ((tag = *in++) != 15)
+            Perl_av_store(aTHX_ av, i++, read_sv(aTHX));
+
+        SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+        SvROK_on(rv);
+        SvRV_set(rv, (SV*)av);
+
+        return rv;
+    }
+    read_enum: {
+        tag = *in++;
+
+        // small_int if +ve, int otherwise.
+        SV *sv = read_sv(aTHX);
+
+        Perl_sv_upgrade(aTHX_ sv, SVt_PVMG);
 
         tag = *in++;
 
-        if ((key_size = READ_LEN)) {
-            key = cache_keys[key_size];
+        uint32_t len = READ_LEN;
 
-            key_size = cache_sizes[key_size];
+        char *str = Perl_sv_grow(aTHX_ sv, len + 1);
+
+        memcpy(str, in, len);
+
+        in += len;
+
+        str[len] = '\0';
+
+        SvCUR_set(sv, len);
+
+        SvFLAGS(sv) = SVf_IOK | SVp_IOK | SVs_OBJECT | SVf_POK | SVp_POK | SVt_PVMG | SVf_UTF8;
+
+        HV *stash = Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Enum"), 0);
+
+        SvREFCNT(stash)++;
+        SvSTASH_set(sv, stash);
+
+        SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
+
+        SvROK_on(rv);
+        SvRV_set(rv, sv);
+
+        return rv;
+    }
+    read_string: {
+        uint32_t len = READ_LEN;
+
+        SV *string = Perl_newSVpvn_flags(aTHX_ (char *)in, len, SVf_UTF8);
+
+        in += len;
+
+        return string;
+    }
+    read_small_int: {
+        uint32_t result = tag & 15;
+
+        if (tag & 16)
+            result |= read_v_int() << 4;
+
+        return Perl_newSVuv(aTHX_ result);
+    }
+    read_small_long: {
+        uint64_t result = tag & 15;
+
+        // Inlined variable-length +ve long code, see read_v_int().
+        if (tag & 16) {
+            uint8_t shift = 4;
+
+            do result |= ((tag = *in++) & 127) << shift;
+            while (tag & 128 && (shift += 7));
         }
-        else {
-            tag = *in++;
 
-            cache_sizes[++cache_pos] = key_size = READ_LEN;
+        return Perl_newSVuv(aTHX_ result);
+    }
+    read_array: {
+        AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
+        uint32_t len;
 
-            cache_keys[cache_pos] = key = in;
+        if ((len = READ_LEN)) {
+            SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
 
-            in += key_size;
+            AvALLOC(av) = AvARRAY(av) = ary;
+            AvFILLp(av) = AvMAX(av) = len - 1;
+
+            while (ary != end) {
+                tag = *in++;
+                *ary++ = read_sv(aTHX);
+            }
         }
 
-        tag = *in++;
+        SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
 
-        Perl_hv_common(aTHX_ hv, NULL, (char *)key, key_size, HVhek_UTF8, HV_FETCH_ISSTORE, DISPATCH, 0);
+        SvROK_on(rv);
+        SvRV(rv) = (SV*)av;
+
+        return rv;
     }
-
-    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
-
-    SvROK_on(rv);
-    SvRV_set(rv, (SV*)hv);
-
-    return rv;
-}
-
-SV* read_solr_doc(pTHX) {
-    tag = *in++;
-
-    // Assume the doc is implemented as a simple ordered map.
-    return read_map(aTHX);
-}
-
-SV* read_solr_doc_list(pTHX) {
-    HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
-
-    // Assume values are in an array, skip tag & DISPATCH.
-    in++;
-
-    // Assume numFound is a small long.
-    tag = *in++;
-    Perl_hv_common(aTHX_ hv, NULL, "numFound", 8, 0, HV_FETCH_ISSTORE, read_small_long(aTHX), numFound);
-
-    // Assume start is a small long.
-    tag = *in++;
-    Perl_hv_common(aTHX_ hv, NULL, "start", 5, 0, HV_FETCH_ISSTORE, read_small_long(aTHX), start);
-
-    // Assume maxScore is either a float or undef.
-    Perl_hv_common(aTHX_ hv, NULL, "maxScore", 8, 0, HV_FETCH_ISSTORE, *in++ ? read_float(aTHX) : &PL_sv_undef, maxScore);
-
-    // Assume docs are an array.
-    tag = *in++;
-    Perl_hv_common(aTHX_ hv, NULL, "docs", 4, 0, HV_FETCH_ISSTORE, read_array(aTHX), docs);
-
-    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
-
-    SvROK_on(rv);
-    SvRV_set(rv, (SV*)hv);
-
-    return rv;
-}
-
-SV* read_byte_array(pTHX) {
-    AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
-    uint32_t len;
-
-    if ((len = read_v_int())) {
-        SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
-
-        AvALLOC(av) = AvARRAY(av) = ary;
-        AvFILLp(av) = AvMAX(av) = len - 1;
-
-        while (ary != end)
-            *ary++ = Perl_newSViv(aTHX_ (int8_t) *in++);
-    }
-
-    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
-
-    SvROK_on(rv);
-    SvRV_set(rv, (SV*)av);
-
-    return rv;
-}
-
-SV* read_iterator(pTHX) {
-    AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
-    uint32_t i = 0;
-
-    while ((tag = *in++) != 15)
-        Perl_av_store(aTHX_ av, i++, DISPATCH);
-
-    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
-
-    SvROK_on(rv);
-    SvRV_set(rv, (SV*)av);
-
-    return rv;
-}
-
-SV* read_enum(pTHX) {
-    tag = *in++;
-
-    // small_int if +ve, int otherwise.
-    SV *sv = DISPATCH;
-
-    Perl_sv_upgrade(aTHX_ sv, SVt_PVMG);
-
-    tag = *in++;
-
-    uint32_t len = READ_LEN;
-
-    char *str = Perl_sv_grow(aTHX_ sv, len + 1);
-
-    memcpy(str, in, len);
-
-    in += len;
-
-    str[len] = '\0';
-
-    SvCUR_set(sv, len);
-
-    SvFLAGS(sv) = SVf_IOK | SVp_IOK | SVs_OBJECT | SVf_POK | SVp_POK | SVt_PVMG | SVf_UTF8;
-
-    HV *stash = Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Enum"), 0);
-
-    SvREFCNT(stash)++;
-    SvSTASH_set(sv, stash);
-
-    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
-
-    SvROK_on(rv);
-    SvRV_set(rv, sv);
-
-    return rv;
-}
-
-SV* read_string(pTHX) {
-    uint32_t len = READ_LEN;
-
-    SV *string = Perl_newSVpvn_flags(aTHX_ (char *)in, len, SVf_UTF8);
-
-    in += len;
-
-    return string;
-}
-
-SV* read_small_int(pTHX) {
-    uint32_t result = tag & 15;
-
-    if (tag & 16)
-        result |= read_v_int() << 4;
-
-    return Perl_newSVuv(aTHX_ result);
-}
-
-SV* read_small_long(pTHX) {
-    uint64_t result = tag & 15;
-
-    // Inlined variable-length +ve long code, see read_v_int().
-    if (tag & 16) {
-        uint8_t shift = 4;
-
-        do result |= ((tag = *in++) & 127) << shift;
-        while (tag & 128 && (shift += 7));
-    }
-
-    return Perl_newSVuv(aTHX_ result);
-}
-
-SV* read_array(pTHX) {
-    AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
-    uint32_t len;
-
-    if ((len = READ_LEN)) {
-        SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
-
-        AvALLOC(av) = AvARRAY(av) = ary;
-        AvFILLp(av) = AvMAX(av) = len - 1;
-
-        while (ary != end) {
-            tag = *in++;
-            *ary++ = DISPATCH;
-        }
-    }
-
-    SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
-
-    SvROK_on(rv);
-    SvRV(rv) = (SV*)av;
-
-    return rv;
 }
 
 static void write_v_int(uint32_t i) {
@@ -583,7 +541,7 @@ static void from_javabin(pTHX_ CV *cv) {
 
     tag = *in++;
 
-    *sp = Perl_sv_2mortal(aTHX_ DISPATCH);
+    *sp = Perl_sv_2mortal(aTHX_ read_sv(aTHX));
 
     PL_stack_sp = sp;
 }

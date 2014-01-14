@@ -46,7 +46,7 @@ static uint32_t read_v_int() {
 // matches this then an additional vint is added.
 //
 // The overview of the tag byte is therefore TTTSSSSS with T and S being type and size.
-SV* read_sv(pTHX) {
+static SV* read_sv(pTHX) {
     void* dispatch[] = {
         &&read_undef,
         &&read_bool,

@@ -75,6 +75,8 @@ static SV* read_sv(pTHX) {
         &&read_map,
     };
 
+    tag = *in++;
+
     goto *dispatch[tag >> 5 ? (tag >> 5) + 18 : tag];
 
     read_undef:
@@ -218,8 +220,6 @@ static SV* read_sv(pTHX) {
                 in += key_size;
             }
 
-            tag = *in++;
-
             Perl_hv_common(aTHX_ hv, NULL, (char *)key, key_size, HVhek_UTF8, HV_FETCH_ISSTORE, read_sv(aTHX), 0);
         }
 
@@ -236,16 +236,12 @@ static SV* read_sv(pTHX) {
         // Assume values are in an array, skip tag & read_sv.
         in++;
 
-        tag = *in++;
         Perl_hv_common(aTHX_ hv, NULL, "numFound", 8, 0, HV_FETCH_ISSTORE, read_sv(aTHX), numFound);
 
-        tag = *in++;
         Perl_hv_common(aTHX_ hv, NULL, "start", 5, 0, HV_FETCH_ISSTORE, read_sv(aTHX), start);
 
-        tag = *in++;
         Perl_hv_common(aTHX_ hv, NULL, "maxScore", 8, 0, HV_FETCH_ISSTORE, read_sv(aTHX), maxScore);
 
-        tag = *in++;
         Perl_hv_common(aTHX_ hv, NULL, "docs", 4, 0, HV_FETCH_ISSTORE, read_sv(aTHX), docs);
 
         SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
@@ -280,8 +276,10 @@ static SV* read_sv(pTHX) {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
         uint32_t i = 0;
 
-        while ((tag = *in++) != 15)
+        while (*in != 15)
             Perl_av_store(aTHX_ av, i++, read_sv(aTHX));
+
+        in++;
 
         SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
 
@@ -291,10 +289,7 @@ static SV* read_sv(pTHX) {
         return rv;
     }
     read_enum: {
-        tag = *in++;
-
-        // small_int if +ve, int otherwise.
-        SV *sv = read_sv(aTHX);
+        SV *sv = read_sv(aTHX); // small_int if +ve, int otherwise.
 
         Perl_sv_upgrade(aTHX_ sv, SVt_PVMG);
 
@@ -366,10 +361,8 @@ static SV* read_sv(pTHX) {
             AvALLOC(av) = AvARRAY(av) = ary;
             AvFILLp(av) = AvMAX(av) = len - 1;
 
-            while (ary != end) {
-                tag = *in++;
+            while (ary != end)
                 *ary++ = read_sv(aTHX);
-            }
         }
 
         SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
@@ -538,8 +531,6 @@ static void from_javabin(pTHX_ CV *cv) {
 
     if (*in++ != 2)
         Perl_croak(aTHX_ "Invalid from_javabin input: expected version 2");
-
-    tag = *in++;
 
     *sp = Perl_sv_2mortal(aTHX_ read_sv(aTHX));
 

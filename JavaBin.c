@@ -22,11 +22,11 @@ static HV* bool_stash;
 // Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
 // http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
 static uint32_t read_v_int() {
-    uint8_t shift;
-    uint32_t result = *in++ & 127;
+    uint8_t shift = 0;
+    uint32_t result = 0;
 
-    for (shift = 7; in[-1] & 128; shift += 7)
-        result |= (*in++ & 127) << shift;
+    do result |= (*in++ & 127) << shift;
+    while (in[-1] & 128 && (shift += 7));
 
     return result;
 }

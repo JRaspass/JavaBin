@@ -2,13 +2,13 @@
 #include "EXTERN.h"
 #include "perl.h"
 
-#define READ_LEN (tag & 31) == 31 ? 31 + read_v_int() : tag & 31
+#define READ_LEN (in[-1] & 31) == 31 ? 31 + read_v_int() : in[-1] & 31
 
 typedef union { uint64_t i; double d; } int_to_double;
 typedef union { uint32_t i; float  f; } int_to_float;
 
 // TODO non fixed cache size?
-static uint8_t *cache_keys[100], cache_pos, *in, *out, tag;
+static uint8_t *cache_keys[100], cache_pos, *in, *out;
 static uint32_t cache_sizes[100];
 
 // Computed at boot hash keys.
@@ -23,10 +23,10 @@ static HV* bool_stash;
 // http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
 static uint32_t read_v_int() {
     uint8_t shift;
-    uint32_t result = (tag = *in++) & 127;
+    uint32_t result = *in++ & 127;
 
-    for (shift = 7; tag & 128; shift += 7)
-        result |= ((tag = *in++) & 127) << shift;
+    for (shift = 7; in[-1] & 128; shift += 7)
+        result |= (*in++ & 127) << shift;
 
     return result;
 }
@@ -75,14 +75,14 @@ static SV* read_sv(pTHX) {
         &&read_map,
     };
 
-    tag = *in++;
+    in++;
 
-    goto *dispatch[tag >> 5 ? (tag >> 5) + 18 : tag];
+    goto *dispatch[in[-1] >> 5 ? (in[-1] >> 5) + 18 : in[-1]];
 
     read_undef:
         return &PL_sv_undef;
     read_bool: {
-        SV *rv = Perl_newSV_type(aTHX_ SVt_IV), *sv = tag == 1 ? bool_true : bool_false;
+        SV *rv = Perl_newSV_type(aTHX_ SVt_IV), *sv = in[-1] == 1 ? bool_true : bool_false;
 
         SvREFCNT(sv)++;
         SvROK_on(rv);
@@ -194,16 +194,16 @@ static SV* read_sv(pTHX) {
         return Perl_newSVpvn(aTHX_ date_str, 24);
     }
     read_solr_doc:
-        tag = *in++; // Assume a solr soc is a map.
+        in++; // Assume a solr soc is a map.
     read_map: {
         HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
 
-        uint32_t key_size, size = tag >> 5 ? READ_LEN : read_v_int();
+        uint32_t key_size, size = in[-1] >> 5 ? READ_LEN : read_v_int();
 
         while (size--) {
             uint8_t *key;
 
-            tag = *in++;
+            in++;
 
             if ((key_size = READ_LEN)) {
                 key = cache_keys[key_size];
@@ -211,7 +211,7 @@ static SV* read_sv(pTHX) {
                 key_size = cache_sizes[key_size];
             }
             else {
-                tag = *in++;
+                in++;
 
                 cache_sizes[++cache_pos] = key_size = READ_LEN;
 
@@ -293,7 +293,7 @@ static SV* read_sv(pTHX) {
 
         Perl_sv_upgrade(aTHX_ sv, SVt_PVMG);
 
-        tag = *in++;
+        in++;
 
         uint32_t len = READ_LEN;
 
@@ -331,22 +331,22 @@ static SV* read_sv(pTHX) {
         return string;
     }
     read_small_int: {
-        uint32_t result = tag & 15;
+        uint32_t result = in[-1] & 15;
 
-        if (tag & 16)
+        if (in[-1] & 16)
             result |= read_v_int() << 4;
 
         return Perl_newSVuv(aTHX_ result);
     }
     read_small_long: {
-        uint64_t result = tag & 15;
+        uint64_t result = in[-1] & 15;
 
         // Inlined variable-length +ve long code, see read_v_int().
-        if (tag & 16) {
+        if (in[-1] & 16) {
             uint8_t shift = 4;
 
-            do result |= ((tag = *in++) & 127) << shift;
-            while (tag & 128 && (shift += 7));
+            do result |= (*in++ & 127) << shift;
+            while (in[-1] & 128 && (shift += 7));
         }
 
         return Perl_newSVuv(aTHX_ result);

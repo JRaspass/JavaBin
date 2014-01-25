@@ -7,9 +7,16 @@
 typedef union { uint64_t i; double d; } int_to_double;
 typedef union { uint32_t i; float  f; } int_to_float;
 
-// TODO non fixed cache size?
-static uint8_t *cache_keys[100], cache_pos, *in, *out;
-static uint32_t cache_sizes[100];
+typedef struct {
+    char    *key;
+    uint8_t  flags;
+    uint32_t len;
+} cached_key;
+
+//TODO dynamically allocate cached keys.
+static cached_key cached_keys[100];
+
+static uint8_t cache_pos, *in, *out;
 
 // Computed at boot hash keys.
 static uint32_t docs, maxScore, numFound, start;
@@ -198,29 +205,36 @@ static SV* read_sv(pTHX) {
     read_map: {
         HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
 
-        uint32_t key_size, size = in[-1] >> 5 ? READ_LEN : read_v_int();
+        uint32_t len = in[-1] >> 5 ? READ_LEN : read_v_int();
 
-        while (size--) {
-            uint8_t *key;
+        while (len--) {
+            cached_key key;
 
             in++;
 
-            if ((key_size = READ_LEN)) {
-                key = cache_keys[key_size];
+            uint32_t i;
 
-                key_size = cache_sizes[key_size];
-            }
+            if ((i = READ_LEN))
+                key = cached_keys[i];
             else {
                 in++;
 
-                cache_sizes[++cache_pos] = key_size = READ_LEN;
+                key = (cached_key){ (char*)in, 0, READ_LEN };
 
-                cache_keys[cache_pos] = key = in;
+                // Set the UTF8 flag if we hit a high byte.
+                for (i = 0; i < key.len; i++) {
+                    if (in[i] & 128) {
+                        key.flags = HVhek_UTF8;
+                        break;
+                    }
+                }
 
-                in += key_size;
+                in += key.len;
+
+                cached_keys[++cache_pos] = key;
             }
 
-            Perl_hv_common(aTHX_ hv, NULL, (char *)key, key_size, HVhek_UTF8, HV_FETCH_ISSTORE, read_sv(aTHX), 0);
+            Perl_hv_common(aTHX_ hv, NULL, key.key, key.len, key.flags, HV_FETCH_ISSTORE, read_sv(aTHX), 0);
         }
 
         SV *rv = Perl_newSV_type(aTHX_ SVt_IV);

@@ -1,11 +1,11 @@
 after_success: "[ $CC == gcc ] && cover -report coveralls -test"
 env:
-    - CC=clang PB_OPT=perl-5.19.7
-    - CC=clang PB_OPT='--thread perl-5.19.7'
+    - CC=clang PB_OPT=perl-5.19.8
+    - CC=clang PB_OPT='--thread perl-5.19.8'
     - CC=clang PB_OPT=perl-5.18.2
     - CC=clang PB_OPT='--thread perl-5.18.2'
-    - CC=gcc   PB_OPT=perl-5.19.7
-    - CC=gcc   PB_OPT='--thread perl-5.19.7'
+    - CC=gcc   PB_OPT=perl-5.19.8
+    - CC=gcc   PB_OPT='--thread perl-5.19.8'
     - CC=gcc   PB_OPT=perl-5.18.2
     - CC=gcc   PB_OPT='--thread perl-5.18.2'
 install:

@@ -32,7 +32,7 @@ public class MakeData {
                         put("one_small_step", new Date(-14159040000L));
                         put("pangram", "The quick brown fox jumped over the lazy dog");
                         put("pi_double", 3.14159265358979);
-                        put("pi_float", 3.14159f);
+                        put("pi_float", 3.141593f);
                         put("short_max", (short)32_767);
                         put("short_min", (short)-32_768);
                         put("simple_ordered_map", new SimpleOrderedMap<String>(){{

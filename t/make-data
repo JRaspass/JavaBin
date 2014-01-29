@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-VER=4.6.0
+VER=4.6.1
 SOLR=~/Downloads/solr-$VER
 
 export CLASSPATH=$SOLR/dist/solr-solrj-$VER.jar:$SOLR/dist/solrj-lib/*:.

@@ -37,7 +37,7 @@ is_deeply from_javabin(<$fh>), {
         one_small_step     => '1969-07-21T02:56:00.000Z',
         pangram            => 'The quick brown fox jumped over the lazy dog',
         pi_double          => 3.14159265358979,
-        pi_float           => 3.14159,
+        pi_float           => 3.141593,
         short_max          => 32_767,
         short_min          => -32_768,
         simple_ordered_map => {qw/foo bar baz qux/},

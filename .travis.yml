@@ -1,16 +1,16 @@
 after_success: "[ $CC == gcc ] && cover -report coveralls -test"
 env:
-    - CC=clang PB_OPT=perl-5.19.8
-    - CC=clang PB_OPT='--thread perl-5.19.8'
+    - CC=clang PB_OPT=perl-5.19.9
+    - CC=clang PB_OPT='--thread perl-5.19.9'
     - CC=clang PB_OPT=perl-5.18.2
     - CC=clang PB_OPT='--thread perl-5.18.2'
-    - CC=gcc   PB_OPT=perl-5.19.8
-    - CC=gcc   PB_OPT='--thread perl-5.19.8'
+    - CC=gcc   PB_OPT=perl-5.19.9
+    - CC=gcc   PB_OPT='--thread perl-5.19.9'
     - CC=gcc   PB_OPT=perl-5.18.2
     - CC=gcc   PB_OPT='--thread perl-5.18.2'
 install:
     - sudo ln -fs $(which $CC) /usr/bin/cc
-    - perlbrew install -j$(nproc) -n --noman $PB_OPT
+    - perlbrew install -DNO_MATHOMS -j`nproc` -n --noman $PB_OPT
     - perlbrew use `echo $PB_OPT | awk '{print $NF}'`
     - cpanm -nq Test::Fatal
     - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls IO::Socket::SSL; fi"

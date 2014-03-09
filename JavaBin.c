@@ -5,11 +5,11 @@
 #define READ_LEN (in[-1] & 31) == 31 ? 31 + read_v_int() : in[-1] & 31
 
 typedef union { uint64_t i; double d; } int_to_double;
-typedef union { uint32_t i; float  f; } int_to_float;
+typedef union { uint32_t i; float f; } int_to_float;
 
 typedef struct {
     char    *key;
-    uint8_t  flags;
+    uint8_t flags;
     uint32_t len;
 } cached_key;
 
@@ -86,9 +86,9 @@ static SV* read_sv(pTHX) {
 
     goto *dispatch[in[-1] >> 5 ? (in[-1] >> 5) + 18 : in[-1]];
 
-    read_undef:
-        return &PL_sv_undef;
-    read_bool: {
+read_undef:
+    return &PL_sv_undef;
+read_bool: {
         SV *rv = Perl_newSV_type(aTHX_ SVt_IV), *sv = in[-1] == 1 ? bool_true : bool_false;
 
         SvREFCNT(sv)++;
@@ -97,16 +97,16 @@ static SV* read_sv(pTHX) {
 
         return rv;
     }
-    read_byte:
-        return Perl_newSViv(aTHX_ (int8_t) *in++);
-    read_short: {
+read_byte:
+    return Perl_newSViv(aTHX_ (int8_t) *in++);
+read_short: {
         int16_t s = in[0] << 8 | in[1];
 
         in += 2;
 
         return Perl_newSViv(aTHX_ s);
     }
-    read_double: {
+read_double: {
         // For perls with double length NVs this conversion is simple.
         // Read 8 bytes, cast to double, return. For long double perls
         // more magic is used, see read_float for more details.
@@ -132,14 +132,14 @@ static SV* read_sv(pTHX) {
         return Perl_newSVnv(aTHX_ u.d);
     #endif
     }
-    read_int: {
+read_int: {
         int32_t i = in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3];
 
         in += 4;
 
         return Perl_newSViv(aTHX_ i);
     }
-    read_long: {
+read_long: {
         int64_t l = (uint64_t) in[0] << 56 |
                     (uint64_t) in[1] << 48 |
                     (uint64_t) in[2] << 40 |
@@ -153,7 +153,7 @@ static SV* read_sv(pTHX) {
 
         return Perl_newSViv(aTHX_ l);
     }
-    read_float: {
+read_float: {
         // JavaBin has a 4byte float format, NVs in perl are double or long double,
         // therefore a little magic is required. Read the 4 bytes into an int in the
         // correct endian order. Re-read these bits as a float, stringify this float,
@@ -172,7 +172,7 @@ static SV* read_sv(pTHX) {
         return Perl_newSVnv(aTHX_ strtod(str, NULL));
     #endif
     }
-    read_date: {
+read_date: {
         int64_t date_ms = (uint64_t) in[0] << 56 |
                           (uint64_t) in[1] << 48 |
                           (uint64_t) in[2] << 40 |
@@ -191,18 +191,18 @@ static SV* read_sv(pTHX) {
         char date_str[25];
 
         sprintf(date_str, "%u-%02u-%02uT%02u:%02u:%02u.%03uZ", t->tm_year + 1900,
-                                                               t->tm_mon + 1,
-                                                               t->tm_mday,
-                                                               t->tm_hour,
-                                                               t->tm_min,
-                                                               t->tm_sec,
-                                                               (uint32_t) (date_ms % 1000));
+                t->tm_mon + 1,
+                t->tm_mday,
+                t->tm_hour,
+                t->tm_min,
+                t->tm_sec,
+                (uint32_t) (date_ms % 1000));
 
         return Perl_newSVpvn(aTHX_ date_str, 24);
     }
-    read_solr_doc:
-        in++; // Assume a solr soc is a map.
-    read_map: {
+read_solr_doc:
+    in++;     // Assume a solr soc is a map.
+read_map: {
         HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
 
         uint32_t len = in[-1] >> 5 ? READ_LEN : read_v_int();
@@ -244,7 +244,7 @@ static SV* read_sv(pTHX) {
 
         return rv;
     }
-    read_solr_doc_list: {
+read_solr_doc_list: {
         HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
 
         // Assume values are in an array, skip tag & read_sv.
@@ -265,7 +265,7 @@ static SV* read_sv(pTHX) {
 
         return rv;
     }
-    read_byte_array: {
+read_byte_array: {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
         uint32_t len;
 
@@ -286,7 +286,7 @@ static SV* read_sv(pTHX) {
 
         return rv;
     }
-    read_iterator: {
+read_iterator: {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
         uint32_t i = 0;
 
@@ -302,7 +302,7 @@ static SV* read_sv(pTHX) {
 
         return rv;
     }
-    read_enum: {
+read_enum: {
         SV *sv = read_sv(aTHX); // small_int if +ve, int otherwise.
 
         Perl_sv_upgrade(aTHX_ sv, SVt_PVMG);
@@ -335,16 +335,16 @@ static SV* read_sv(pTHX) {
 
         return rv;
     }
-    read_string: {
+read_string: {
         uint32_t len = READ_LEN;
 
-        SV *string = Perl_newSVpvn_flags(aTHX_ (char *)in, len, SVf_UTF8);
+        SV *string = Perl_newSVpvn_flags(aTHX_ (char *) in, len, SVf_UTF8);
 
         in += len;
 
         return string;
     }
-    read_small_int: {
+read_small_int: {
         uint32_t result = in[-1] & 15;
 
         if (in[-1] & 16)
@@ -352,7 +352,7 @@ static SV* read_sv(pTHX) {
 
         return Perl_newSVuv(aTHX_ result);
     }
-    read_small_long: {
+read_small_long: {
         uint64_t result = in[-1] & 15;
 
         // Inlined variable-length +ve long code, see read_v_int().
@@ -365,7 +365,7 @@ static SV* read_sv(pTHX) {
 
         return Perl_newSVuv(aTHX_ result);
     }
-    read_array: {
+read_array: {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
         uint32_t len;
 
@@ -465,61 +465,61 @@ static void write_sv(pTHX_ SV *sv) {
         }
 
         switch (SvTYPE(sv)) {
-            case SVt_PVAV: {
-                uint32_t len = AvFILLp(sv) + 1;
+        case SVt_PVAV: {
+            uint32_t len = AvFILLp(sv) + 1;
 
-                write_shifted_tag(128, len);
+            write_shifted_tag(128, len);
 
-                SV **ary = AvARRAY(sv), **end = ary + len;
+            SV **ary = AvARRAY(sv), **end = ary + len;
 
-                while (ary != end)
-                    write_sv(aTHX_ *ary++);
+            while (ary != end)
+                write_sv(aTHX_ *ary++);
 
-                break;
-            }
-            case SVt_PVHV: {
-                *out++ = 10;
+            break;
+        }
+        case SVt_PVHV: {
+            *out++ = 10;
 
-                uint32_t len;
+            uint32_t len;
 
-                if ((len = HvUSEDKEYS(sv))) {
-                    write_v_int(len);
+            if ((len = HvUSEDKEYS(sv))) {
+                write_v_int(len);
 
-                    HE **start = HvARRAY(sv), **end = start + HvMAX(sv) + 1;
+                HE **start = HvARRAY(sv), **end = start + HvMAX(sv) + 1;
 
-                    do {
-                        HE *entry;
+                do {
+                    HE *entry;
 
-                        for (entry = *start++; entry; entry = HeNEXT(entry)) {
-                            SV *value = HeVAL(entry);
+                    for (entry = *start++; entry; entry = HeNEXT(entry)) {
+                        SV *value = HeVAL(entry);
 
-                            if (value != &PL_sv_placeholder) {
-                                //TODO Implement the cached key feature.
-                                *out++ = 0;
+                        if (value != &PL_sv_placeholder) {
+                            //TODO Implement the cached key feature.
+                            *out++ = 0;
 
-                                uint32_t klen = HeKLEN(entry);
+                            uint32_t klen = HeKLEN(entry);
 
-                                write_shifted_tag(32, klen);
+                            write_shifted_tag(32, klen);
 
-                                memcpy(out, HeKEY(entry), klen);
+                            memcpy(out, HeKEY(entry), klen);
 
-                                out += klen;
+                            out += klen;
 
-                                write_sv(aTHX_ value);
+                            write_sv(aTHX_ value);
 
-                                if (--len == 0)
-                                    return;
-                            }
+                            if (--len == 0)
+                                return;
                         }
-                    } while (start != end);
-                }
-                else
-                    *out++ = 0;
-
-                break;
+                    }
+                } while (start != end);
             }
-            default:
+            else
                 *out++ = 0;
+
+            break;
+        }
+        default:
+            *out++ = 0;
         }
     }
     else
@@ -611,13 +611,13 @@ void boot(pTHX_ CV *cv) {
         GvSV(Perl_gv_fetchpvn_flags(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), GV_ADD, SVt_PV)),
         &PL_sv_yes,
         0
-    );
+        );
     Perl_sv_setsv_flags(
         aTHX_
         GvSV(Perl_gv_fetchpvn_flags(aTHX_ STR_WITH_LEN("JavaBin::Enum::()"), GV_ADD, SVt_PV)),
         &PL_sv_yes,
         0
-    );
+        );
 
     // Make two bools (true and false), store them in globals.
     bool_stash = Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0);
@@ -648,7 +648,7 @@ void boot(pTHX_ CV *cv) {
         GvSV(Perl_gv_fetchpvn_flags(aTHX_ STR_WITH_LEN("JavaBin::true"), GV_ADD, SVt_PV)),
         sv,
         0
-    );
+        );
 
     sv = Perl_newSV_type(aTHX_ SVt_IV);
 
@@ -660,7 +660,7 @@ void boot(pTHX_ CV *cv) {
         GvSV(Perl_gv_fetchpvn_flags(aTHX_ STR_WITH_LEN("JavaBin::false"), GV_ADD, SVt_PV)),
         sv,
         0
-    );
+        );
 
     // Precompute some hash keys.
     PERL_HASH(docs,     "docs",     4);

@@ -100,7 +100,7 @@ read_bool: {
 read_byte:
     return Perl_newSViv(aTHX_ (int8_t) *in++);
 read_short: {
-        int16_t s = in[0] << 8 | in[1];
+        const int16_t s = in[0] << 8 | in[1];
 
         in += 2;
 
@@ -111,14 +111,14 @@ read_double: {
         // Read 8 bytes, cast to double, return. For long double perls
         // more magic is used, see read_float for more details.
 
-        int_double u = { (uint64_t) in[0] << 56 |
-                         (uint64_t) in[1] << 48 |
-                         (uint64_t) in[2] << 40 |
-                         (uint64_t) in[3] << 32 |
-                         (uint64_t) in[4] << 24 |
-                         (uint64_t) in[5] << 16 |
-                         (uint64_t) in[6] << 8  |
-                         (uint64_t) in[7] };
+        const int_double u = { (uint64_t) in[0] << 56 |
+                               (uint64_t) in[1] << 48 |
+                               (uint64_t) in[2] << 40 |
+                               (uint64_t) in[3] << 32 |
+                               (uint64_t) in[4] << 24 |
+                               (uint64_t) in[5] << 16 |
+                               (uint64_t) in[6] << 8  |
+                               (uint64_t) in[7] };
 
         in += 8;
 
@@ -133,21 +133,21 @@ read_double: {
     #endif
     }
 read_int: {
-        int32_t i = in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3];
+        const int32_t i = in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3];
 
         in += 4;
 
         return Perl_newSViv(aTHX_ i);
     }
 read_long: {
-        int64_t l = (uint64_t) in[0] << 56 |
-                    (uint64_t) in[1] << 48 |
-                    (uint64_t) in[2] << 40 |
-                    (uint64_t) in[3] << 32 |
-                    (uint64_t) in[4] << 24 |
-                    (uint64_t) in[5] << 16 |
-                    (uint64_t) in[6] << 8  |
-                    (uint64_t) in[7];
+        const int64_t l = (uint64_t) in[0] << 56 |
+                          (uint64_t) in[1] << 48 |
+                          (uint64_t) in[2] << 40 |
+                          (uint64_t) in[3] << 32 |
+                          (uint64_t) in[4] << 24 |
+                          (uint64_t) in[5] << 16 |
+                          (uint64_t) in[6] << 8  |
+                          (uint64_t) in[7];
 
         in += 8;
 
@@ -158,7 +158,7 @@ read_float: {
         // therefore a little magic is required. Read the 4 bytes into an int in the
         // correct endian order. Re-read these bits as a float, stringify this float,
         // then finally numify the string into a double or long double.
-        int_float u = { in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3] };
+        const int_float u = { in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3] };
 
         in += 4;
 
@@ -173,20 +173,20 @@ read_float: {
     #endif
     }
 read_date: {
-        int64_t date_ms = (uint64_t) in[0] << 56 |
-                          (uint64_t) in[1] << 48 |
-                          (uint64_t) in[2] << 40 |
-                          (uint64_t) in[3] << 32 |
-                          (uint64_t) in[4] << 24 |
-                          (uint64_t) in[5] << 16 |
-                          (uint64_t) in[6] << 8  |
-                          (uint64_t) in[7];
+        const int64_t date_ms = (uint64_t) in[0] << 56 |
+                                (uint64_t) in[1] << 48 |
+                                (uint64_t) in[2] << 40 |
+                                (uint64_t) in[3] << 32 |
+                                (uint64_t) in[4] << 24 |
+                                (uint64_t) in[5] << 16 |
+                                (uint64_t) in[6] << 8  |
+                                (uint64_t) in[7];
 
         in += 8;
 
-        time_t date = date_ms / 1000;
+        const time_t date = date_ms / 1000;
 
-        struct tm *t = gmtime(&date);
+        const struct tm *t = gmtime(&date);
 
         char date_str[25];
 
@@ -309,7 +309,7 @@ read_enum: {
 
         in++;
 
-        uint32_t len = READ_LEN;
+        const uint32_t len = READ_LEN;
 
         char *str = Perl_sv_grow(aTHX_ sv, len + 1);
 
@@ -336,7 +336,7 @@ read_enum: {
         return rv;
     }
 read_string: {
-        uint32_t len = READ_LEN;
+        const uint32_t len = READ_LEN;
 
         SV *string = Perl_newSVpvn_flags(aTHX_ (char *) in, len, SVf_UTF8);
 
@@ -367,9 +367,9 @@ read_small_long: {
     }
 read_array: {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
-        uint32_t len;
+        const uint32_t len = READ_LEN;
 
-        if ((len = READ_LEN)) {
+        if (len) {
             SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
 
             AvALLOC(av) = AvARRAY(av) = ary;
@@ -412,7 +412,7 @@ static void write_sv(pTHX_ SV *sv) {
     SvGETMAGIC(sv);
 
     if (SvPOKp(sv)) {
-        STRLEN len = SvCUR(sv);
+        const STRLEN len = SvCUR(sv);
 
         write_shifted_tag(32, len);
 
@@ -421,7 +421,7 @@ static void write_sv(pTHX_ SV *sv) {
         out += len;
     }
     else if (SvNOKp(sv)) {
-        int_double u = { .d = SvNV(sv) };
+        const int_double u = { .d = SvNV(sv) };
 
         *out++ = 5;
         *out++ = u.i >> 56;
@@ -434,7 +434,7 @@ static void write_sv(pTHX_ SV *sv) {
         *out++ = u.i;
     }
     else if (SvIOKp(sv)) {
-        int64_t i = SvIV(sv);
+        const int64_t i = SvIV(sv);
 
         if (i == (int8_t)i) {
             *out++ = 3;
@@ -476,7 +476,7 @@ static void write_sv(pTHX_ SV *sv) {
 
         switch (SvTYPE(sv)) {
         case SVt_PVAV: {
-            uint32_t len = AvFILLp(sv) + 1;
+            const uint32_t len = AvFILLp(sv) + 1;
 
             write_shifted_tag(128, len);
 

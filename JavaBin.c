@@ -201,7 +201,7 @@ read_date: {
         return Perl_newSVpvn(aTHX_ date_str, 24);
     }
 read_solr_doc:
-    in++;     // Assume a solr soc is a map.
+    in++;     // Assume a solr doc is a map.
 read_map: {
         HV *hv = (HV*)Perl_newSV_type(aTHX_ SVt_PVHV);
 

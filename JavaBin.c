@@ -4,8 +4,8 @@
 
 #define READ_LEN (in[-1] & 31) == 31 ? 31 + read_v_int() : in[-1] & 31
 
-typedef union { uint64_t i; double d; } int_to_double;
-typedef union { uint32_t i; float f; } int_to_float;
+typedef union { uint64_t i; double d; } int_double;
+typedef union { uint32_t i; float f; } int_float;
 
 typedef struct {
     char    *key;
@@ -111,14 +111,14 @@ read_double: {
         // Read 8 bytes, cast to double, return. For long double perls
         // more magic is used, see read_float for more details.
 
-        int_to_double u = { (uint64_t) in[0] << 56 |
-                            (uint64_t) in[1] << 48 |
-                            (uint64_t) in[2] << 40 |
-                            (uint64_t) in[3] << 32 |
-                            (uint64_t) in[4] << 24 |
-                            (uint64_t) in[5] << 16 |
-                            (uint64_t) in[6] << 8  |
-                            (uint64_t) in[7] };
+        int_double u = { (uint64_t) in[0] << 56 |
+                         (uint64_t) in[1] << 48 |
+                         (uint64_t) in[2] << 40 |
+                         (uint64_t) in[3] << 32 |
+                         (uint64_t) in[4] << 24 |
+                         (uint64_t) in[5] << 16 |
+                         (uint64_t) in[6] << 8  |
+                         (uint64_t) in[7] };
 
         in += 8;
 
@@ -158,7 +158,7 @@ read_float: {
         // therefore a little magic is required. Read the 4 bytes into an int in the
         // correct endian order. Re-read these bits as a float, stringify this float,
         // then finally numify the string into a double or long double.
-        int_to_float u = { in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3] };
+        int_float u = { in[0] << 24 | in[1] << 16 | in[2] << 8 | in[3] };
 
         in += 4;
 
@@ -421,7 +421,17 @@ static void write_sv(pTHX_ SV *sv) {
         out += len;
     }
     else if (SvNOKp(sv)) {
-        Perl_croak(aTHX_ "TODO: to_javabin double");
+        int_double u = { .d = SvNV(sv) };
+
+        *out++ = 5;
+        *out++ = u.i >> 56;
+        *out++ = u.i >> 48;
+        *out++ = u.i >> 40;
+        *out++ = u.i >> 32;
+        *out++ = u.i >> 24;
+        *out++ = u.i >> 16;
+        *out++ = u.i >> 8;
+        *out++ = u.i;
     }
     else if (SvIOKp(sv)) {
         int64_t i = SvIV(sv);

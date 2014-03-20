@@ -5,11 +5,12 @@ JavaBin - Apache Solr JavaBin (de)serializer
 =begin html
 
 <a href="https://travis-ci.org/JRaspass/JavaBin">
-    <img src="https://travis-ci.org/JRaspass/JavaBin.png" alt="Build Status"/>
+    <img src="https://api.travis-ci.org/JRaspass/JavaBin.svg">
 </a>
 <a href="https://coveralls.io/r/JRaspass/JavaBin">
-    <img src="https://coveralls.io/repos/JRaspass/JavaBin/badge.png" alt="Coverage Status"/>
+    <img src="https://img.shields.io/coveralls/JRaspass/JavaBin.svg">
 </a>
+
 
 =end html
 

@@ -536,9 +536,7 @@ static void write_sv(pTHX_ SV *sv) {
         *out++ = 0;
 }
 
-static void from_javabin(pTHX_ CV *cv) {
-    PERL_UNUSED_VAR(cv);
-
+static void from_javabin(pTHX_ CV *cv __attribute__((unused))) {
     SV **sp = PL_stack_base + *PL_markstack_ptr + 1;
 
     if (sp > PL_stack_sp)
@@ -561,9 +559,7 @@ static void from_javabin(pTHX_ CV *cv) {
     PL_stack_sp = sp;
 }
 
-static void to_javabin(pTHX_ CV *cv) {
-    PERL_UNUSED_VAR(cv);
-
+static void to_javabin(pTHX_ CV *cv __attribute__((unused))) {
     SV **sp = PL_stack_base + *PL_markstack_ptr + 1;
 
     SV *targ = PAD_SV(PL_op->op_targ);
@@ -584,9 +580,7 @@ static void to_javabin(pTHX_ CV *cv) {
     PL_stack_sp = sp;
 }
 
-static void deref(pTHX_ CV *cv) {
-    PERL_UNUSED_VAR(cv);
-
+static void deref(pTHX_ CV *cv __attribute__((unused))) {
     PL_stack_sp = PL_stack_base + *PL_markstack_ptr + 1;
 
     *PL_stack_sp = SvRV(*PL_stack_sp);
@@ -605,9 +599,7 @@ static void sub(pTHX_ char *name, STRLEN len, XSUBADDR_t addr) {
     SvFLAGS(GvSTASH(gv)) |= SVf_AMAGIC;
 }
 
-void boot(pTHX_ CV *cv) {
-    PERL_UNUSED_VAR(cv);
-
+void boot(pTHX_ CV *cv __attribute__((unused))) {
     sub(aTHX_ STR_WITH_LEN("JavaBin::from_javabin"), from_javabin);
     sub(aTHX_ STR_WITH_LEN("JavaBin::to_javabin"), to_javabin);
     sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), NULL);

@@ -1,4 +1,4 @@
-package JavaBin 0.7;
+package JavaBin 0.8;
 
 require DynaLoader;
 

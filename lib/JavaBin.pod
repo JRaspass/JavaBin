@@ -52,53 +52,59 @@ Returns a Perl string containing the binary JavaBin.
 
 This function does no error checking, hand it invalid JavaBin and it will probably die.
 
-=head1 DATA TYPE MAPPING
+=head1 MAPPING
 
-Java data types are mapped to Perl ones as follows.
+This section describes how JavaBin maps Perl values to JavaBin values and vice versa. These mappings are designed to "do the right thing" in most circumstances automatically, preserving round-tripping characteristics (what you put in comes out as something equivalent).
 
-=head2 null
+Runtime errors are avoided with a preference to encoding more exoctic Perl values (think regular expressions, tied values, etc.) to a JavaBin null.
 
-A null is returned as L<undef>.
+=head2 JavaBin -> Perl
 
-=head2 Booleans
+=head3 null
 
-True and false are returned as 1 and 0 respectively.
+A JavaBin null becomes undef in Perl.
 
-=head2 Byte, short, double, int, and long.
+=head3 true, false
 
-Integers of all size are returned as scalars, with the requirement of a 64bit Perl for longs.
+JavaBin booleans become L<JavaBin::Bool> objects in Perl which overload to behave like literal C<1> and C<0> respectively.
 
-=head2 Float
+=head3 byte, short, int, long
 
-A float is returned as a scalar, with the requirement of a 64bit Perl for large values.
+JavaBin integers are returned as scalars (with IV set), with the requirement of a 64bit Perl for longs.
 
-=head2 Date
+=head3 float, double
 
-A date is returned as a string in ISO 8601 format. This may change to be a Date object like L<DateTime> in future.
+JavaBin floating point values are returned as scalars (with NV set).
 
-=head2 Map
+=head3 String
 
-A map is returned as a hash.
+JavaBin Strings are returned as Perl strings with the UTF-8 flag on.
 
-=head2 Iterator
+=head3 Date
 
-An iterator is flattened into an array.
+A JavaBin Date is returned as a string in ISO 8601 format. This will likely change to be a L<JavaBin::Date> object in future to facilitate round-tripping.
 
-=head2 String
+=head3 Enum
 
-All strings are returned as strings with the UTF-8 flag on.
+A JavaBin enum is returned as a L<JavaBin::Enum> object.
 
-=head2 Array
+=head3 array
 
-An array is returned as an array.
+A JavaBin array is returned as a Perl array.
 
-=head2 SimpleOrderedMap
+=head3 Iterator
 
-A SimpleOrderedMap is returned as an array. This will likely change to be a tied hash like L<Tie::IxHash> in future.
+A JavaBin Iterator is flattened into a Perl array. This will likely change to be a L<JavaBin::Iterator> object in future to facilitate round-tripping.
 
-=head2 NamedList
+=head3 Map, NamedList, SimpleOrderedMap
 
-A NamedList is returned as an array. This will likely change to be a tied hash or object in future.
+A JavaBin Map, NamedList, or SimpleOrderedMap is returned as a Perl hash. This is technically wrong all three allow repeating keys but Perl does not, and SimpleOrderedMap, as the name implies, has an order but Perl does not.
+
+This will need to change in the future.
+
+=head2 Perl -> JavaBin
+
+TODO
 
 =head1 INSPIRATION
 

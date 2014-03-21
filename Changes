@@ -5,6 +5,7 @@
     - Croak on invalid JavaBin version. Only accept version 2.
     - Fix loss of precision with floats on -Duselongdouble perls.
     - Implement the from_javabin function.
+    - Improved docs on mapping.
     - Provide example benchmarks of alternatives.
     - Support EnumFieldValue.
 

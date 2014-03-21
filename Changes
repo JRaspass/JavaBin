@@ -1,4 +1,4 @@
-0.7 ???
+0.7 2014-03-21
     - Avoid punctuation in test data filenames, fixes Windows.
     - Bump minimum Perl version to 5.18, this keeps the code sane.
     - Croak on insufficient length.

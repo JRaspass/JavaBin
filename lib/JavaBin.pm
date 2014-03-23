@@ -1,23 +1,20 @@
 package JavaBin 0.8;
 
-require DynaLoader;
+use strict;
+use warnings;
 
-DynaLoader::dl_install_xsub(
-    undef,
-    DynaLoader::dl_find_symbol(
-        DynaLoader::dl_load_file(
-            scalar DynaLoader::dl_findfile(map("-L$_/auto/JavaBin", @INC), 'JavaBin')
-        ),
-        'boot'
-    )
-)->();
+use XSLoader;
+
+XSLoader::load();
 
 sub import {
     shift;
 
-    my $caller = caller;
+    my $pkg = caller . '::';
 
-    *{ $caller . "::$_" } = \&$_ for @_ ? @_ : qw/from_javabin to_javabin/;
+    no strict 'refs';
+
+    *{ $pkg . $_ } = \&$_ for @_ ? @_ : qw/from_javabin to_javabin/;
 }
 
 1;

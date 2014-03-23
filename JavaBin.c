@@ -599,7 +599,7 @@ static void sub(pTHX_ char *name, STRLEN len, XSUBADDR_t addr) {
     SvFLAGS(GvSTASH(gv)) |= SVf_AMAGIC;
 }
 
-void boot(pTHX_ CV *cv __attribute__((unused))) {
+void boot_JavaBin(pTHX_ CV *cv __attribute__((unused))) {
     sub(aTHX_ STR_WITH_LEN("JavaBin::from_javabin"), from_javabin);
     sub(aTHX_ STR_WITH_LEN("JavaBin::to_javabin"), to_javabin);
     sub(aTHX_ STR_WITH_LEN("JavaBin::Bool::()"), NULL);

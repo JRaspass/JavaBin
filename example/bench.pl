@@ -59,44 +59,44 @@ my $srel_enc = Sereal::Encoder->new;
 
 my %alts; %alts = (
     CBOR => {
-        from => sub { decode_cbor $alts{CBOR}{data} },
-        pkg  => 'CBOR::XS',
-        to   => sub { encode_cbor $languages },
+        dec => sub { decode_cbor $alts{CBOR}{data} },
+        enc => sub { encode_cbor $languages },
+        pkg => 'CBOR::XS',
     },
     Dump => {
-        from => sub { eval $alts{Dump}{data} },
-        pkg  => 'Data::Dumper',
-        to   => sub { Dumper $languages },
+        dec => sub { eval $alts{Dump}{data} },
+        enc => sub { Dumper $languages },
+        pkg => 'Data::Dumper',
     },
     Java => {
-        from => sub { from_javabin $alts{Java}{data} },
-        pkg  => 'JavaBin',
-        to   => sub {   to_javabin $languages },
+        dec => sub { from_javabin $alts{Java}{data} },
+        enc => sub {   to_javabin $languages },
+        pkg => 'JavaBin',
     },
     JSON => {
-        from => sub { decode_json $alts{JSON}{data} },
-        pkg  => 'JSON::XS',
-        to   => sub { encode_json $languages },
+        dec => sub { decode_json $alts{JSON}{data} },
+        enc => sub { encode_json $languages },
+        pkg => 'JSON::XS',
     },
     MsgP => {
-        from => sub { $mpack->unpack($alts{MsgP}{data}) },
-        pkg  => 'Data::MessagePack',
-        to   => sub { $mpack->pack($languages) },
+        dec => sub { $mpack->unpack($alts{MsgP}{data}) },
+        enc => sub { $mpack->pack($languages) },
+        pkg => 'Data::MessagePack',
     },
     Srel => {
-        from => sub { sereal_decode_with_object $srel_dec, $alts{Srel}{data} },
-        pkg  => 'Sereal',
-        to   => sub { sereal_encode_with_object $srel_enc, $languages },
+        dec => sub { sereal_decode_with_object $srel_dec, $alts{Srel}{data} },
+        enc => sub { sereal_encode_with_object $srel_enc, $languages },
+        pkg => 'Sereal',
     },
     Stor => {
-        from => sub {   thaw $alts{Stor}{data} },
-        pkg  => 'Storable',
-        to   => sub { freeze $languages },
+        dec => sub {   thaw $alts{Stor}{data} },
+        enc => sub { freeze $languages },
+        pkg => 'Storable',
     },
     YAML => {
-        from => sub { Load $alts{YAML}{data} },
-        pkg  => 'YAML::XS',
-        to   => sub { Dump $languages },
+        dec => sub { Load $alts{YAML}{data} },
+        enc => sub { Dump $languages },
+        pkg => 'YAML::XS',
     },
 );
 
@@ -111,15 +111,15 @@ print "Modules\n\n";
 
 print "\nEncode\n";
 
-cmpthese -1, { map { $_ => $alts{$_}{to} } keys %alts };
+cmpthese -1, { map ref() ? $_->{enc} : $_, %alts };
 
 print "\nSize\n\n";
 
-$_->{size} = length( $_->{data} = $_->{to}->() ) for values %alts;
+$_->{size} = length( $_->{data} = $_->{enc}->() ) for values %alts;
 
 printf "%-5s%d bytes\n", $_, $alts{$_}{size}
     for sort { $alts{$b}{size} <=> $alts{$a}{size} } keys %alts;
 
 print "\nDecode\n";
 
-cmpthese -1, { map { $_ => $alts{$_}{from} } keys %alts };
+cmpthese -1, { map ref() ? $_->{dec} : $_, %alts };

@@ -9,7 +9,7 @@ use Data::Dumper 'Dumper';
 use Data::MessagePack;
 use JavaBin;
 use JSON::XS qw/decode_json encode_json/;
-use Sereal;
+use Sereal qw/sereal_decode_with_object sereal_encode_with_object/;
 use Storable qw/freeze thaw/;
 use YAML::XS qw/Dump Load/;
 
@@ -53,8 +53,9 @@ my $languages = {
     },
 };
 
-my $mpack  = Data::MessagePack->new;
-my $sereal = Sereal::Encoder->new;
+my $mpack    = Data::MessagePack->new;
+my $srel_dec = Sereal::Decoder->new;
+my $srel_enc = Sereal::Encoder->new;
 
 my %alts; %alts = (
     CBOR => {
@@ -83,9 +84,9 @@ my %alts; %alts = (
         to   => sub { $mpack->pack($languages) },
     },
     Srel => {
-        from => sub { $sereal->decode($alts{Srel}{data}) },
+        from => sub { sereal_decode_with_object $srel_dec, $alts{Srel}{data} },
         pkg  => 'Sereal',
-        to   => sub { $sereal->encode($languages) },
+        to   => sub { sereal_encode_with_object $srel_enc, $languages },
     },
     Stor => {
         from => sub {   thaw $alts{Stor}{data} },
@@ -120,7 +121,5 @@ printf "%-5s%d bytes\n", $_, $alts{$_}{size}
     for sort { $alts{$b}{size} <=> $alts{$a}{size} } keys %alts;
 
 print "\nDecode\n";
-
-$sereal = Sereal::Decoder->new;
 
 cmpthese -1, { map { $_ => $alts{$_}{from} } keys %alts };

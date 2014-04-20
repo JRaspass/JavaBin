@@ -1,4 +1,5 @@
 0.8 ???
+    - The output buffer is now grown as needed.
 
 0.7 2014-03-21
     - Avoid punctuation in test data filenames, fixes Windows.

@@ -16,15 +16,13 @@ typedef struct {
 //TODO dynamically allocate cached keys.
 static cached_key cached_keys[100];
 
-static uint8_t cache_pos, *in, *out;
+static uint8_t cache_pos, *in, *out_buf;
 
 // Computed at boot hash keys.
 static uint32_t docs, maxScore, numFound, start;
 
-// Globally stored JavaBin::Bool's of true and false.
-static SV *bool_true, *bool_false;
-
-static HV* bool_stash;
+static HV *bool_stash;
+static SV *bool_true, *bool_false, *out_sv;
 
 // Lucene variable-length +ve integer, the MSB indicates whether you need another octet.
 // http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/fileformats.html#VInt
@@ -388,21 +386,32 @@ read_array: {
     }
 }
 
+static void grow_out(pTHX_ uint32_t want) {
+    if ( out_buf + want < (uint8_t *)SvPVX(out_sv) + SvLEN(out_sv) )
+        return;
+
+    uint32_t len = out_buf - (uint8_t *)SvPVX(out_sv);
+
+    Perl_sv_grow(aTHX_ out_sv, len + want);
+
+    out_buf = (uint8_t *)SvPVX(out_sv) + len;
+}
+
 static void write_v_int(uint32_t i) {
     while (i & ~127) {
-        *out++ = (i & 127) | 128;
+        *out_buf++ = (i & 127) | 128;
 
         i >>= 7;
     }
 
-    *out++ = i;
+    *out_buf++ = i;
 }
 
 static void write_shifted_tag(uint8_t tag, uint32_t len) {
     if (len < 31)
-        *out++ = tag | len;
+        *out_buf++ = tag | len;
     else {
-        *out++ = tag | 31;
+        *out_buf++ = tag | 31;
 
         write_v_int(len - 31);
     }
@@ -414,54 +423,66 @@ static void write_sv(pTHX_ SV *sv) {
     if (SvPOKp(sv)) {
         const STRLEN len = SvCUR(sv);
 
+        grow_out(aTHX_ len + 5);
+
         write_shifted_tag(32, len);
 
-        memcpy(out, SvPVX(sv), len);
+        memcpy(out_buf, SvPVX(sv), len);
 
-        out += len;
+        out_buf += len;
     }
     else if (SvNOKp(sv)) {
         const int_double u = { .d = SvNV(sv) };
 
-        *out++ = 5;
-        *out++ = u.i >> 56;
-        *out++ = u.i >> 48;
-        *out++ = u.i >> 40;
-        *out++ = u.i >> 32;
-        *out++ = u.i >> 24;
-        *out++ = u.i >> 16;
-        *out++ = u.i >> 8;
-        *out++ = u.i;
+        grow_out(aTHX_ 9);
+
+        *out_buf++ = 5;
+        *out_buf++ = u.i >> 56;
+        *out_buf++ = u.i >> 48;
+        *out_buf++ = u.i >> 40;
+        *out_buf++ = u.i >> 32;
+        *out_buf++ = u.i >> 24;
+        *out_buf++ = u.i >> 16;
+        *out_buf++ = u.i >> 8;
+        *out_buf++ = u.i;
     }
     else if (SvIOKp(sv)) {
         const int64_t i = SvIV(sv);
 
         if (i == (int8_t)i) {
-            *out++ = 3;
-            *out++ = i;
+            grow_out(aTHX_ 2);
+
+            *out_buf++ = 3;
+            *out_buf++ = i;
         }
         else if (i == (int16_t)i) {
-            *out++ = 4;
-            *out++ = i >> 8;
-            *out++ = i;
+            grow_out(aTHX_ 3);
+
+            *out_buf++ = 4;
+            *out_buf++ = i >> 8;
+            *out_buf++ = i;
         }
         else if (i == (int32_t)i) {
-            *out++ = 6;
-            *out++ = i >> 24;
-            *out++ = i >> 16;
-            *out++ = i >> 8;
-            *out++ = i;
+            grow_out(aTHX_ 5);
+
+            *out_buf++ = 6;
+            *out_buf++ = i >> 24;
+            *out_buf++ = i >> 16;
+            *out_buf++ = i >> 8;
+            *out_buf++ = i;
         }
         else {
-            *out++ = 7;
-            *out++ = i >> 56;
-            *out++ = i >> 48;
-            *out++ = i >> 40;
-            *out++ = i >> 32;
-            *out++ = i >> 24;
-            *out++ = i >> 16;
-            *out++ = i >> 8;
-            *out++ = i;
+            grow_out(aTHX_ 9);
+
+            *out_buf++ = 7;
+            *out_buf++ = i >> 56;
+            *out_buf++ = i >> 48;
+            *out_buf++ = i >> 40;
+            *out_buf++ = i >> 32;
+            *out_buf++ = i >> 24;
+            *out_buf++ = i >> 16;
+            *out_buf++ = i >> 8;
+            *out_buf++ = i;
         }
     }
     else if (SvROK(sv)) {
@@ -469,7 +490,9 @@ static void write_sv(pTHX_ SV *sv) {
 
         // If we have a JavaBin::Bool.
         if (SvTYPE(sv) == SVt_IV || SvSTASH(sv) == bool_stash) {
-            *out++ = SvIV(sv) ? 1 : 2;
+            grow_out(aTHX_ 1);
+
+            *out_buf++ = SvIV(sv) ? 1 : 2;
 
             return;
         }
@@ -477,6 +500,8 @@ static void write_sv(pTHX_ SV *sv) {
         switch (SvTYPE(sv)) {
         case SVt_PVAV: {
             const uint32_t len = AvFILLp(sv) + 1;
+
+            grow_out(aTHX_ len + 5);
 
             write_shifted_tag(128, len);
 
@@ -488,11 +513,13 @@ static void write_sv(pTHX_ SV *sv) {
             break;
         }
         case SVt_PVHV: {
-            *out++ = 10;
+            *out_buf++ = 10;
 
             uint32_t len;
 
             if ((len = HvUSEDKEYS(sv))) {
+                grow_out(aTHX_ 4);
+
                 write_v_int(len);
 
                 HE **start = HvARRAY(sv), **end = start + HvMAX(sv) + 1;
@@ -504,16 +531,18 @@ static void write_sv(pTHX_ SV *sv) {
                         SV *value = HeVAL(entry);
 
                         if (value != &PL_sv_placeholder) {
-                            //TODO Implement the cached key feature.
-                            *out++ = 0;
-
                             uint32_t klen = HeKLEN(entry);
+
+                            grow_out(aTHX_ klen + 6);
+
+                            //TODO Implement the cached key feature.
+                            *out_buf++ = 0;
 
                             write_shifted_tag(32, klen);
 
-                            memcpy(out, HeKEY(entry), klen);
+                            memcpy(out_buf, HeKEY(entry), klen);
 
-                            out += klen;
+                            out_buf += klen;
 
                             write_sv(aTHX_ value);
 
@@ -523,17 +552,25 @@ static void write_sv(pTHX_ SV *sv) {
                     }
                 } while (start != end);
             }
-            else
-                *out++ = 0;
+            else {
+                grow_out(aTHX_ 1);
+
+                *out_buf++ = 0;
+            }
 
             break;
         }
         default:
-            *out++ = 0;
+            grow_out(aTHX_ 1);
+
+            *out_buf++ = 0;
         }
     }
-    else
-        *out++ = 0;
+    else {
+        grow_out(aTHX_ 1);
+
+        *out_buf++ = 0;
+    }
 }
 
 static void from_javabin(pTHX_ CV *cv __attribute__((unused))) {
@@ -562,20 +599,22 @@ static void from_javabin(pTHX_ CV *cv __attribute__((unused))) {
 static void to_javabin(pTHX_ CV *cv __attribute__((unused))) {
     SV **sp = PL_stack_base + *PL_markstack_ptr + 1;
 
-    SV *targ = PAD_SV(PL_op->op_targ);
+    out_sv = PAD_SV(PL_op->op_targ);
 
-    Perl_sv_grow(aTHX_ targ, 1000); //FIXME obviously.
-    SvPOK_on(targ);
+    Perl_sv_upgrade(aTHX_ out_sv, SVt_PV);
+    SvPOK_on(out_sv);
 
-    out = (uint8_t *)SvPVX(targ);
+    out_buf = (uint8_t *)SvPVX(out_sv);
 
-    *out++ = 2;
+    grow_out(aTHX_ 1);
+
+    *out_buf++ = 2;
 
     write_sv(aTHX_ *sp);
 
-    SvCUR(targ) = out - (uint8_t *)SvPVX(targ);
+    SvCUR(out_sv) = out_buf - (uint8_t *)SvPVX(out_sv);
 
-    *sp = targ;
+    *sp = out_sv;
 
     PL_stack_sp = sp;
 }

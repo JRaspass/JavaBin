@@ -1,9 +1,9 @@
 #!/bin/sh -e
 
-VER=4.6.1
-SOLR=~/Downloads/solr-$VER
+VER=4.7.2
+DIR=~/Downloads/solr-$VER
 
-export CLASSPATH=$SOLR/dist/solr-solrj-$VER.jar:$SOLR/dist/solrj-lib/*:.
+export CLASSPATH=$DIR/dist/solr-solrj-$VER.jar:$DIR/dist/solrj-lib/*:.
 
 cd t
 

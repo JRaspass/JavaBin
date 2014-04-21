@@ -112,3 +112,9 @@ TODO
 
 This package was inspired by the L<Ruby JavaBin library|https://github.com/kennyj/java_bin>.
 Both that library and the Java JavaBin library proved very helpful in understanding JavaBin.
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright © 2013–2014 by James Raspass
+
+This is free software; you can redistribute it and/or modify it under the same terms as Perl itself.

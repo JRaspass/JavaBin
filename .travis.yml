@@ -5,7 +5,7 @@ env:
     - CC=gcc   PB_OPT=perl-5.18.2
 
     # Test latest perl.
-    - CC=gcc   PB_OPT=perl-5.19.10
+    - CC=gcc   PB_OPT=perl-5.19.11
 
     # Test weird and whacky options.
     - CC=gcc   PB_OPT='--64all  perl-5.18.2'
@@ -15,7 +15,7 @@ env:
     - CC=gcc   PB_OPT='--thread perl-5.18.2'
 install:
     - sudo ln -fs $(which $CC) /usr/bin/cc
-    - perlbrew install -DNO_MATHOMS -j`nproc` -n --noman $PB_OPT
+    - perlbrew install -DNO_MATHOMS -DPERL_DISABLE_PMC -j`nproc` -n --noman $PB_OPT
     - perlbrew use `echo $PB_OPT | awk '{print $NF}'`
     - cpanm -nq Test::Fatal
     - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls IO::Socket::SSL; fi"

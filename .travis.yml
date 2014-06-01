@@ -1,4 +1,4 @@
-after_success: "[ $CC == gcc ] && cover -report coveralls -test"
+after_success: "[ $CC == gcc ] && cover -coverage default,-pod -report coveralls -test"
 env:
     # Old stable.
     - CC=gcc   PB_OPT=perl-5.18.2

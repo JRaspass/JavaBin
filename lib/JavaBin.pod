@@ -4,17 +4,13 @@
 
 JavaBin - Apache Solr JavaBin (de)serializer
 
-=begin html
-
+=for html
 <a href="https://travis-ci.org/JRaspass/JavaBin">
     <img src="https://api.travis-ci.org/JRaspass/JavaBin.svg">
 </a>
 <a href="https://coveralls.io/r/JRaspass/JavaBin">
     <img src="https://img.shields.io/coveralls/JRaspass/JavaBin.svg">
 </a>
-
-
-=end html
 
 =head1 SYNOPSIS
 

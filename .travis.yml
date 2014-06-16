@@ -21,7 +21,7 @@ install:
     - perlbrew install -DNO_MATHOMS -Dusedevel -j`nproc` -n --noman $PB_OPT
     - perlbrew use `echo $PB_OPT | awk '{print $NF}'`
     - cpanm -nq Test::Fatal
-    - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls IO::Socket::SSL; fi"
+    - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls; fi"
 language: perl
 script:
     - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1

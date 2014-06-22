@@ -1,6 +1,7 @@
 #define PERL_NO_GET_CONTEXT
-#include "EXTERN.h"
-#include "perl.h"
+#include <EXTERN.h>
+#include <perl.h>
+#include <stdint.h>
 
 #define READ_LEN (in[-1] & 31) == 31 ? 31 + read_v_int() : in[-1] & 31
 

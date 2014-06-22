@@ -1,4 +1,4 @@
-package JavaBin 0.9;
+package JavaBin 0.10;
 
 use strict;
 use warnings;

@@ -1,43 +1,69 @@
 use strict;
 use warnings;
 
+use B qw/svref_2object SVf_IOK SVf_NOK SVf_POK/;
+use Config;
 use JavaBin;
 use Test::More;
 
-my @ints;
+my @packs = qw/- - - c s> - l> q>/;
 
-{
-    use integer;
+for (
+    [ -9_223_372_036_854_775_808, 7 ], #  QUAD_MIN
+    [ -9_223_372_036_854_775_807, 7 ], #  QUAD_MIN + 1
+    [             -2_147_483_649, 7 ], #  LONG_MIN - 1
+    [             -2_147_483_648, 6 ], #  LONG_MIN
+    [             -2_147_483_647, 6 ], #  LONG_MIN + 1
+    [                    -32_769, 6 ], # SHORT_MIN - 1
+    [                    -32_768, 4 ], # SHORT_MIN
+    [                    -32_767, 4 ], # SHORT_MIN + 1
+    [                       -129, 4 ], #  CHAR_MIN - 1
+    [                       -128, 3 ], #  CHAR_MIN
+    [                       -127, 3 ], #  CHAR_MIN + 1
+    [                         -1, 3 ],
+    [                          0, 3 ],
+    [                          1, 3 ],
+    [                        126, 3 ], #  CHAR_MAX - 1
+    [                        127, 3 ], #  CHAR_MAX
+    [                        128, 4 ], #  CHAR_MAX + 1
+    [                     32_766, 4 ], # SHORT_MAX - 1
+    [                     32_767, 4 ], # SHORT_MAX
+    [                     32_768, 6 ], # SHORT_MAX + 1
+    [              2_147_483_646, 6 ], #  LONG_MAX - 1
+    [              2_147_483_647, 6 ], #  LONG_MAX
+    [              2_147_483_648, 7 ], #  LONG_MAX + 1
+    [  9_223_372_036_854_775_806, 7 ], #  QUAD_MAX - 1
+    [  9_223_372_036_854_775_807, 7 ], #  QUAD_MAX
+){
+    my ( $pv, $size ) = @$_;
 
-    # Min and max of each array type (byte, short, int, long).
-    # Sort. Throw in each value plus and minus one.
-    # Knock of the two wrapped around values.
-    @ints = map { $_ - 1, $_, $_ + 1 }
-           sort { $a <=> $b }
-            map { -(2 ** $_), 2 ** $_ - 1 }
-                ( 7, 15, 31, 63 );
+    next if $size == 7 && !$Config{use64bitint};
 
-    pop @ints;
-    shift @ints;
-}
+    my $iv = eval $pv; # Stringify $pv to a PVIV, create a new IV in $iv.
 
-for (@ints) {
-    my $i = eval; # Stringify $_ to a PVIV, create a new IV in $i.
+    my $flags = svref_2object(\$iv)->FLAGS;
 
-    my $javabin =           -129 < $i && $i <           128 ? "\2\3" . pack 'c' , $i
-                :        -32_769 < $i && $i <        32_768 ? "\2\4" . pack 's>', $i
-                : -2_147_483_649 < $i && $i < 2_147_483_648 ? "\2\6" . pack 'l>', $i
-                :                                             "\2\7" . pack 'q>', $i;
+    ok $flags & SVf_IOK, "$pv is IOK";
+    ok !($flags & SVf_NOK), "$pv isn't NOK";
+    ok !($flags & SVf_POK), "$pv isn't POK";
 
-    is to_javabin($i), $javabin, "  to_javabin $_";
+    my $javabin = "\2" . chr($size) . pack $packs[$size], $iv;
 
-    is from_javabin($javabin), $i, "from_javabin $_";
+    is to_javabin($iv), $javabin, "$pv to_javabin";
 
-    $javabin = "\2" . chr( 32 | length ) . $_;
+    is from_javabin($javabin), $iv, "$pv from_javabin";
 
-    is to_javabin($_), $javabin, qq/  to_javabin "$_"/;
+    $javabin = "\2" . chr( 32 | length $pv ) . $pv;
 
-    is from_javabin($javabin), $i, qq/from_javabin "$_"/;
+    $flags = svref_2object(\$pv)->FLAGS;
+
+    ok $flags & SVf_IOK, qq/"$pv" is IOK/;
+    ok !($flags & SVf_NOK), qq/"$pv" isn't NOK/;
+    ok $flags & SVf_POK, qq/"$pv" is POK/;
+
+    is to_javabin($pv), $javabin, qq/"$pv" to_javabin/;
+
+    is from_javabin($javabin), $iv, qq/"$pv" from_javabin/;
 }
 
 done_testing;

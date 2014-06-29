@@ -218,7 +218,7 @@ read_map: {
             else {
                 in++;
 
-                key = (cached_key){ (char*)in, 0, READ_LEN };
+                cached_keys[++cache_pos] = key = (cached_key){ (char*)in, 0, READ_LEN };
 
                 // Set the UTF8 flag if we hit a high byte.
                 for (i = 0; i < key.len; i++) {
@@ -229,8 +229,6 @@ read_map: {
                 }
 
                 in += key.len;
-
-                cached_keys[++cache_pos] = key;
             }
 
             Perl_hv_common(aTHX_ hv, NULL, key.key, key.len, key.flags, HV_FETCH_ISSTORE, read_sv(aTHX), 0);
@@ -337,11 +335,18 @@ read_enum: {
 read_string: {
         const uint32_t len = READ_LEN;
 
-        SV *string = Perl_newSVpvn_flags(aTHX_ (char *) in, len, SVf_UTF8);
+        SV *sv = Perl_newSV_type(aTHX_ SVt_PV);
+
+        char *str = SvPVX(sv) = (char*)safemalloc(len);
+
+        memcpy(str, in, len);
+
+        SvCUR(sv) = SvLEN(sv) = len;
+        SvFLAGS(sv) |= SVf_POK | SVp_POK | SVf_UTF8;
 
         in += len;
 
-        return string;
+        return sv;
     }
 read_small_int: {
         uint32_t result = in[-1] & 15;

@@ -318,7 +318,7 @@ read_enum: {
 
         str[len] = '\0';
 
-        SvCUR_set(sv, len);
+        SvCUR(sv) = len;
 
         SvFLAGS(sv) = SVf_IOK | SVp_IOK | SVs_OBJECT | SVf_POK | SVp_POK | SVt_PVMG | SVf_UTF8;
 

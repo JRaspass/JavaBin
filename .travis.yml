@@ -19,7 +19,8 @@ env:
 install:
     - sudo ln -fs $(which $CC) /usr/bin/cc
     - perlbrew install -DNO_MATHOMS -Dusedevel -j`nproc` -n --noman --switch $PB_OPT
-    - perl -V
+    - perlbrew list
+    - perlbrew version
     - cpanm -nq Test::Fatal
     - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls; fi"
 language: perl

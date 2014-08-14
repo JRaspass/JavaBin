@@ -18,9 +18,9 @@ env:
     - CC=gcc   PB_OPT='--thread perl-5.20.0'
 install:
     - sudo ln -fs $(which $CC) /usr/bin/cc
-    - perlbrew install -DNO_MATHOMS -Dusedevel -j`nproc` -n --noman --switch $PB_OPT
-    - perlbrew list
-    - perlbrew version
+    - perlbrew install -DNO_MATHOMS -Dusedevel -j`nproc` -n --noman $PB_OPT
+    - perlbrew use ${PB_OPT/* }
+    - perl -V
     - cpanm -nq Test::Fatal
     - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls; fi"
 language: perl

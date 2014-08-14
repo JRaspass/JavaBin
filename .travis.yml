@@ -1,4 +1,4 @@
-after_success: "[ $CC == gcc ] && cover -coverage default,-pod -ignore_re '\\.h$' -report coveralls -test"
+after_success: "[ $CC = gcc ] && cover -coverage default,-pod -ignore_re '\\.h$' -report coveralls -test"
 env:
     # Old stable.
     - CC=gcc   PB_OPT=perl-5.18.2
@@ -21,7 +21,7 @@ install:
     - perlbrew use ${PB_OPT/* }
     - perl -V
     - cpanm -nq Test::Fatal
-    - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls; fi"
+    - "if [ $CC = gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls; fi"
 language: perl
 script:
     - perl Makefile.PL CC=$CC INSTALLMAN3DIR=none NO_MYMETA=1

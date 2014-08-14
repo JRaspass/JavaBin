@@ -17,7 +17,6 @@ env:
     - CC=gcc   PB_OPT='--multi  perl-5.20.0'
     - CC=gcc   PB_OPT='--thread perl-5.20.0'
 install:
-    - sudo ln -fs $(which $CC) /usr/bin/cc
     - perlbrew install -DNO_MATHOMS -Dusedevel -j`nproc` -n --noman $PB_OPT
     - perlbrew use ${PB_OPT/* }
     - perl -V
@@ -25,6 +24,6 @@ install:
     - "if [ $CC == gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls; fi"
 language: perl
 script:
-    - perl Makefile.PL INSTALLMAN3DIR=none NO_MYMETA=1
+    - perl Makefile.PL CC=$CC INSTALLMAN3DIR=none NO_MYMETA=1
     - make
     - prove -bl

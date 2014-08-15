@@ -211,24 +211,26 @@ read_map: {
 
             in++;
 
-            uint32_t i;
+            const uint32_t i = READ_LEN;
 
-            if ((i = READ_LEN))
+            if (i)
                 key = cached_keys[i];
             else {
                 in++;
 
                 cached_keys[++cache_pos] = key = (cached_key){ (char*)in, 0, READ_LEN };
 
+                uint8_t *key_str = in;
+
+                in += key.len;
+
                 // Set the UTF8 flag if we hit a high byte.
-                for (i = 0; i < key.len; i++) {
-                    if (in[i] & 128) {
+                while (key_str != in) {
+                    if (*key_str++ & 128) {
                         key.flags = HVhek_UTF8;
                         break;
                     }
                 }
-
-                in += key.len;
             }
 
             Perl_hv_common(aTHX_ hv, NULL, key.key, key.len, key.flags, HV_FETCH_ISSTORE, read_sv(aTHX), 0);

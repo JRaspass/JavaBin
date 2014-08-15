@@ -265,14 +265,14 @@ read_solr_doc_list: {
 read_byte_array: {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
 
-        const SSize_t len = read_v_int();
+        SSize_t len = read_v_int();
 
-        SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
+        SV **ary = safemalloc(len * sizeof(SV*));
 
         AvALLOC(av) = AvARRAY(av) = ary;
         AvFILLp(av) = AvMAX(av) = len - 1;
 
-        while (ary != end)
+        while (len--)
             *ary++ = Perl_newSViv(aTHX_ (int8_t) *in++);
 
         SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
@@ -371,14 +371,14 @@ read_small_long: {
 read_array: {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
 
-        const SSize_t len = READ_LEN;
+        SSize_t len = READ_LEN;
 
-        SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
+        SV **ary = safemalloc(len * sizeof(SV*));
 
         AvALLOC(av) = AvARRAY(av) = ary;
         AvFILLp(av) = AvMAX(av) = len - 1;
 
-        while (ary != end)
+        while (len--)
             *ary++ = read_sv(aTHX);
 
         SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
@@ -503,15 +503,15 @@ static void write_sv(pTHX_ SV *sv) {
 
         switch (SvTYPE(sv)) {
         case SVt_PVAV: {
-            const uint32_t len = AvFILLp(sv) + 1;
+            SSize_t len = AvFILLp(sv) + 1;
 
             grow_out(aTHX_ len + 5);
 
             write_shifted_tag(128, len);
 
-            SV **ary = AvARRAY(sv), **end = ary + len;
+            SV **ary = AvARRAY(sv);
 
-            while (ary != end)
+            while (len--)
                 write_sv(aTHX_ *ary++);
 
             break;

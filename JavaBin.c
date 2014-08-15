@@ -391,15 +391,15 @@ read_array: {
     }
 }
 
-static void grow_out(pTHX_ uint32_t want) {
-    if ( out_buf + want < (uint8_t *)SvPVX(out_sv) + SvLEN(out_sv) )
-        return;
+static void grow_out(pTHX_ const uint32_t want) {
+    const uint32_t len = out_buf - (uint8_t *)SvPVX(out_sv);
 
-    uint32_t len = out_buf - (uint8_t *)SvPVX(out_sv);
+    // If we want more than we have, realloc the string.
+    if (len + want >= SvLEN(out_sv)) {
+        Perl_sv_grow(aTHX_ out_sv, len + want);
 
-    Perl_sv_grow(aTHX_ out_sv, len + want);
-
-    out_buf = (uint8_t *)SvPVX(out_sv) + len;
+        out_buf = (uint8_t *)SvPVX(out_sv) + len;
+    }
 }
 
 static void write_v_int(uint32_t i) {

@@ -264,17 +264,16 @@ read_solr_doc_list: {
     }
 read_byte_array: {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
-        uint32_t len;
 
-        if ((len = read_v_int())) {
-            SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
+        const SSize_t len = read_v_int();
 
-            AvALLOC(av) = AvARRAY(av) = ary;
-            AvFILLp(av) = AvMAX(av) = len - 1;
+        SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
 
-            while (ary != end)
-                *ary++ = Perl_newSViv(aTHX_ (int8_t) *in++);
-        }
+        AvALLOC(av) = AvARRAY(av) = ary;
+        AvFILLp(av) = AvMAX(av) = len - 1;
+
+        while (ary != end)
+            *ary++ = Perl_newSViv(aTHX_ (int8_t) *in++);
 
         SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
 
@@ -371,17 +370,16 @@ read_small_long: {
     }
 read_array: {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
-        const uint32_t len = READ_LEN;
 
-        if (len) {
-            SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
+        const SSize_t len = READ_LEN;
 
-            AvALLOC(av) = AvARRAY(av) = ary;
-            AvFILLp(av) = AvMAX(av) = len - 1;
+        SV **ary = safemalloc(len * sizeof(SV*)), **end = ary + len;
 
-            while (ary != end)
-                *ary++ = read_sv(aTHX);
-        }
+        AvALLOC(av) = AvARRAY(av) = ary;
+        AvFILLp(av) = AvMAX(av) = len - 1;
+
+        while (ary != end)
+            *ary++ = read_sv(aTHX);
 
         SV *rv = Perl_newSV_type(aTHX_ SVt_IV);
 

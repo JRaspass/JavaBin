@@ -306,7 +306,7 @@ read_enum: {
 
         in++;
 
-        const uint32_t len = READ_LEN;
+        const STRLEN len = READ_LEN;
 
         char *str = Perl_sv_grow(aTHX_ sv, len + 1);
 
@@ -333,7 +333,7 @@ read_enum: {
         return rv;
     }
 read_string: {
-        const uint32_t len = READ_LEN;
+        const STRLEN len = READ_LEN;
 
         SV *sv = Perl_newSV_type(aTHX_ SVt_PV);
 
@@ -391,8 +391,8 @@ read_array: {
     }
 }
 
-static void grow_out(pTHX_ const uint32_t want) {
-    const uint32_t len = out_buf - (uint8_t *)SvPVX(out_sv);
+static void grow_out(pTHX_ const STRLEN want) {
+    const STRLEN len = out_buf - (uint8_t *)SvPVX(out_sv);
 
     // If we want more than we have, realloc the string.
     if (len + want >= SvLEN(out_sv)) {
@@ -536,7 +536,7 @@ static void write_sv(pTHX_ SV *sv) {
                         SV *value = HeVAL(entry);
 
                         if (value != &PL_sv_placeholder) {
-                            uint32_t klen = HeKLEN(entry);
+                            STRLEN klen = HeKLEN(entry);
 
                             grow_out(aTHX_ klen + 6);
 

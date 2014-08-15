@@ -284,10 +284,11 @@ read_byte_array: {
     }
 read_iterator: {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
-        uint32_t i = 0;
+
+        uint32_t len = 0;
 
         while (*in != 15)
-            Perl_av_store(aTHX_ av, i++, read_sv(aTHX));
+            Perl_av_store(aTHX_ av, len++, read_sv(aTHX));
 
         in++;
 

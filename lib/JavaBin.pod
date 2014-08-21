@@ -11,6 +11,9 @@ JavaBin - Apache Solr JavaBin (de)serializer
 <a href="https://coveralls.io/r/JRaspass/JavaBin">
     <img src="https://img.shields.io/coveralls/JRaspass/JavaBin.svg">
 </a>
+<a href="https://scan.coverity.com/projects/1694">
+    <img src="https://scan.coverity.com/projects/1694/badge.svg">
+</a>
 
 =head1 SYNOPSIS
 

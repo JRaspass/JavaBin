@@ -8,7 +8,7 @@ env:
     - CC=gcc   PB_OPT=perl-5.20.0
 
     # Test latest perl.
-    - CC=gcc   PB_OPT=perl-5.21.2
+    - CC=gcc   PB_OPT=perl-5.21.3
 
     # Test weird and whacky options with stable.
     - CC=gcc   PB_OPT='--64all  perl-5.20.0'

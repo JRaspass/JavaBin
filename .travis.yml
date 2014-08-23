@@ -21,7 +21,7 @@ install:
     - perlbrew use ${PB_OPT/* }
     - perl -V
     - cpanm -nq Test::Fatal
-    - "if [ $CC = gcc ]; then cpanm -nq Devel::Cover::Report::Coveralls; fi"
+    - "if [ $CC = gcc ]; then cpanm -nq git://github.com/JRaspass/coveralls-perl.git; fi"
 language: perl
 script:
     - perl Makefile.PL CC=$CC INSTALLMAN3DIR=none NO_MYMETA=1

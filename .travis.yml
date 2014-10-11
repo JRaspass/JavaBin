@@ -1,21 +1,21 @@
 after_success: "[ $CC = gcc ] && cover -coverage default,-pod -ignore_re '\\.h$' -report coveralls -test"
 env:
     # Old stable.
-    - CC=gcc   PB_OPT=perl-5.18.2
+    - CC=gcc   PB_OPT=perl-5.18.4
 
     # Latest stable, defaults with each compiler.
-    - CC=clang PB_OPT=perl-5.20.0
-    - CC=gcc   PB_OPT=perl-5.20.0
+    - CC=clang PB_OPT=perl-5.20.1
+    - CC=gcc   PB_OPT=perl-5.20.1
 
     # Test latest perl.
-    - CC=gcc   PB_OPT=perl-5.21.3
+    - CC=gcc   PB_OPT=perl-5.21.4
 
     # Test weird and whacky options with stable.
-    - CC=gcc   PB_OPT='--64all  perl-5.20.0'
-    - CC=gcc   PB_OPT='--64int  perl-5.20.0'
-    - CC=gcc   PB_OPT='--ld     perl-5.20.0'
-    - CC=gcc   PB_OPT='--multi  perl-5.20.0'
-    - CC=gcc   PB_OPT='--thread perl-5.20.0'
+    - CC=gcc   PB_OPT='--64all  perl-5.20.1'
+    - CC=gcc   PB_OPT='--64int  perl-5.20.1'
+    - CC=gcc   PB_OPT='--ld     perl-5.20.1'
+    - CC=gcc   PB_OPT='--multi  perl-5.20.1'
+    - CC=gcc   PB_OPT='--thread perl-5.20.1'
 install:
     - perlbrew install -DNO_MATHOMS -Dusedevel -j`nproc` -n --noman $PB_OPT
     - perlbrew use ${PB_OPT/* }

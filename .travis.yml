@@ -20,8 +20,7 @@ install:
     - perlbrew install -DNO_MATHOMS -Dusedevel -j`nproc` -n --noman $PB_OPT
     - perlbrew use ${PB_OPT/* }
     - perl -V
-    - cpanm -nq Test::Fatal
-    - "if [ $CC = gcc ]; then cpanm -n git://github.com/JRaspass/coveralls-perl.git; fi"
+    - cpanm -nq Devel::Cover::Report::Coveralls Test::Fatal
 language: perl
 script:
     - perl Makefile.PL CC=$CC INSTALLMAN3DIR=none NO_MYMETA=1

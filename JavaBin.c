@@ -356,7 +356,7 @@ read_small_int: {
         if (in[-1] & 16)
             result |= read_v_int() << 4;
 
-        return Perl_newSVuv(aTHX_ result);
+        return Perl_newSViv(aTHX_ result);
     }
 read_small_long: {
         uint64_t result = in[-1] & 15;
@@ -369,7 +369,7 @@ read_small_long: {
             while (in[-1] & 128 && (shift += 7));
         }
 
-        return Perl_newSVuv(aTHX_ result);
+        return Perl_newSViv(aTHX_ result);
     }
 read_array: {
         AV *av = (AV*)Perl_newSV_type(aTHX_ SVt_PVAV);
@@ -671,8 +671,8 @@ void boot_JavaBin(pTHX_ CV *cv __attribute__((unused))) {
     bool_stash = Perl_gv_stashpvn(aTHX_ STR_WITH_LEN("JavaBin::Bool"), 0);
     SvREFCNT(bool_stash) += 2;
 
-    bool_true  = Perl_newSVuv(aTHX_ 1);
-    bool_false = Perl_newSVuv(aTHX_ 0);
+    bool_true  = Perl_newSViv(aTHX_ 1);
+    bool_false = Perl_newSViv(aTHX_ 0);
 
     Perl_sv_upgrade(aTHX_ bool_true,  SVt_PVMG);
     Perl_sv_upgrade(aTHX_ bool_false, SVt_PVMG);

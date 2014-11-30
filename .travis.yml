@@ -8,7 +8,7 @@ env:
     - CC=gcc   PB_OPT=perl-5.20.1
 
     # Test latest.
-    - CC=gcc   PB_OPT=perl-5.21.4
+    - CC=gcc   PB_OPT=perl-5.21.6
     - CC=gcc   PB_OPT=perl-blead
 
     # Stable, weird and whacky config options.

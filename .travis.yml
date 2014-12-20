@@ -27,3 +27,4 @@ script:
     - perl Makefile.PL CC=$CC INSTALLMAN3DIR=none NO_MYMETA=1
     - make
     - prove -bl
+sudo: false

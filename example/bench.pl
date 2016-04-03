@@ -17,12 +17,24 @@ $Data::Dumper::Indent = 0;
 
 # Version is a float in order to actually bench a float.
 my $languages = {
+    go => {
+        designers => [
+            'Robert Griesemer',
+            'Rob Pike',
+            'Ken Thompson',
+        ],
+        extensions  => [ '.go' ],
+        native_bool => \1,
+        released    => '2012-03-28',
+        TIOBE_rank  => 44,
+        version     => 1.5,
+    },
     java => {
         designers   => [ 'James Gosling' ],
         extensions  => [ qw/.jar .java .class/ ],
         native_bool => \1,
         released    => '1996-01-23',
-        TIOBE_rank  => 2,
+        TIOBE_rank  => 1,
         version     => 1.8,
     },
     lua => {
@@ -34,7 +46,7 @@ my $languages = {
         extensions  => [ '.lua' ],
         native_bool => \1,
         released    => '1993-07-28',
-        TIOBE_rank  => 35,
+        TIOBE_rank  => 31,
         version     => 5.2,
     },
     perl => {
@@ -42,15 +54,15 @@ my $languages = {
         extensions  => [ qw/.pl .pm .pod .t/ ],
         native_bool => \0,
         released    => '1987-12-18',
-        TIOBE_rank  => 12,
-        version     => 5.18,
+        TIOBE_rank  => 9,
+        version     => 5.22,
     },
     php => {
         designers   => [ 'Rasmus Lerdorf' ],
         extensions  => [ '.php' ],
         native_bool => \1,
         released    => '1995-06-08',
-        TIOBE_rank  => 5,
+        TIOBE_rank  => 6,
         version     => 5.5,
     },
     python => {
@@ -58,16 +70,16 @@ my $languages = {
         extensions  => [ qw/.py .pyc .pyd .pyo .pyw/ ],
         native_bool => \1,
         released    => '1991-02-20',
-        TIOBE_rank  => 8,
-        version     => 3.4,
+        TIOBE_rank  => 5,
+        version     => 3.5,
     },
     ruby => {
-        designers   => 'Yukihiro Matsumoto',
+        designers   => [ 'Yukihiro Matsumoto' ],
         extensions  => [ qw/.rb .rbw/ ],
         native_bool => \1,
         released    => '1995-12-21',
-        TIOBE_rank  => 13,
-        version     => 2.1,
+        TIOBE_rank  => 12,
+        version     => 2.2,
     },
 };
 
@@ -129,15 +141,15 @@ print "Modules\n\n";
 
 print "\nEncode\n";
 
-cmpthese -1, { map ref() ? $_->{enc} : $_, %alts };
+cmpthese -1, { map ref ? $_->{enc} : $_, %alts };
 
 print "\nSize\n\n";
 
-$_->{size} = length( $_->{data} = $_->{enc}->() ) for values %alts;
+$_->{size} = length( $_->{data} = $_->{enc}() ) for values %alts;
 
 printf "%-5s%4d bytes\n", $_, $alts{$_}{size}
     for sort { $alts{$b}{size} <=> $alts{$a}{size} } keys %alts;
 
 print "\nDecode\n";
 
-cmpthese -1, { map ref() ? $_->{dec} : $_, %alts };
+cmpthese -1, { map ref ? $_->{dec} : $_, %alts };
